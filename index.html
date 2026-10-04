@@ -282,7 +282,7 @@ const Q = [];
 Q.push(
   {
     id: "s1q1", s: 1, st: 1, fn: "isdigit", type: "choice",
-    q: "¿Qué valores de `c` hacen que `ft_isdigit(c)` devuelva distinto de cero?",
+    q: "¿Qué valores de `c` hacen que `ft_isdigit(c)` devuelva 1?",
     opts: [
       "Los códigos ASCII del 48 al 57 ('0' a '9')",
       "Los códigos ASCII del 0 al 9",
@@ -290,7 +290,7 @@ Q.push(
       "Cualquier valor menor que 128"
     ],
     ans: 0,
-    why: "Los dígitos ASCII empiezan en '0' (48) y acaban en '9' (57). Compara con los caracteres literales y no con números mágicos: `c >= '0' && c <= '9'`. Devuelve distinto de cero si es dígito y 0 si no lo es.",
+    why: "Los dígitos ASCII empiezan en '0' (48) y acaban en '9' (57). Compara con los caracteres literales y no con números mágicos: `c >= '0' && c <= '9'`. Según el subject, devuelve 1 si es dígito y 0 si no lo es. La libc real sólo garantiza «distinto de cero» (glibc devuelve 2048 en `isdigit`), pero tu libft debe seguir lo que pide el subject.",
     rel: ["isalnum"],
     hint: "El carácter '0' no vale 0, vale 48."
   },
