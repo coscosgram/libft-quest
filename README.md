@@ -11,6 +11,8 @@ Hecho por **coscosgram**.
 - Tres vidas por intento de sector. Un fallo cuesta una vida y la pregunta vuelve más tarde.
 - Un sector se abre al completar el anterior. Los superados se pueden repasar sin límite de vidas.
 - El inventario muestra las funciones dominadas y de cuáles depende cada una.
+- Música chiptune original, generada en el propio navegador. Se activa con el botón ♪ MÚSICA de la barra superior.
+- Efectos de sonido 8 bits en botones, aciertos, fallos y fin de sector (botón ◆ SONIDOS para silenciarlos).
 - Teclado: números para elegir, Enter para comprobar, P para la pista.
 
 ## Cómo usarlo
