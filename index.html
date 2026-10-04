@@ -120,6 +120,22 @@ pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px s
 .line.wrong { border-left-color: var(--bad); background: rgba(255, 112, 88, .12); }
 .line:disabled { cursor: default; }
 
+/* en táctil no hay teclado: fuera las ayudas de teclas */
+@media (pointer: coarse), (max-width: 700px) {
+  .actions .kbd, .kbd-inline { display: none; }
+}
+
+/* tipo build */
+.bhead { margin: 14px 0 6px; color: var(--dim); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+.pool { display: grid; gap: 4px; overflow-x: auto; }
+.piece {
+  text-align: left; background: var(--bg); border: 1px solid var(--line); padding: 2px 12px; font-size: 13px; line-height: 1.7;
+  white-space: pre; min-width: max-content; width: 100%;
+}
+.piece:hover:not(:disabled) { border-color: var(--fg); background: var(--panel-2); }
+.piece:disabled { opacity: .22; cursor: default; }
+.built .empty { margin: 0; padding: 12px 14px; color: var(--faint); font-size: 13px; }
+
 /* opciones */
 .opts { display: grid; gap: 8px; }
 .opt {
@@ -1045,6 +1061,152 @@ t_list  *ft_lstnew(void *content)
     hint: "Si ya sabes dónde está el último nodo, no hace falta buscarlo."
   }
 );
+
+/* ===== Preguntas tipo "build": ordenar piezas de código ===== */
+/* sol = líneas correctas en orden; extra = piezas trampa. Las líneas en blanco no cuentan. */
+Q.push(
+  {
+    id: "s1q8", s: 1, st: 2, fn: "strlen", type: "build",
+    q: "Construye `ft_strlen` colocando las piezas en orden. Sobran dos.",
+    sol: [
+      "size_t  ft_strlen(const char *s)",
+      "{",
+      "    size_t  i;",
+      "    i = 0;",
+      "    while (s[i])",
+      "        i++;",
+      "    return (i);",
+      "}"
+    ],
+    extra: ["    return (i + 1);", "        s++;"],
+    why: "Se declara `i`, se inicializa a 0, se avanza mientras `s[i]` no sea `'\\0'` y se devuelve `i`, que ya es la longitud sin contar el terminador. `return (i + 1)` contaría el `'\\0'`.",
+    rel: [],
+    hint: "Primero la declaración, luego la inicialización, después el bucle y al final el return."
+  },
+  {
+    id: "s2q9", s: 2, st: 3, fn: "memmove", type: "build",
+    q: "Construye `ft_memmove` con las piezas. Sobran tres.",
+    sol: [
+      "void    *ft_memmove(void *dst, const void *src, size_t len)",
+      "{",
+      "    size_t  i;",
+      "    if (!dst && !src)",
+      "        return (NULL);",
+      "    if (dst < src)",
+      "        return (ft_memcpy(dst, src, len));",
+      "    i = len;",
+      "    while (i-- > 0)",
+      "        ((unsigned char *)dst)[i] = ((unsigned char *)src)[i];",
+      "    return (dst);",
+      "}"
+    ],
+    extra: ["    if (dst > src)", "    i = 0;", "    while (i < len)"],
+    why: "Si `dst` está antes que `src`, copiar hacia delante (con `ft_memcpy`) nunca pisa datos que falten por leer. Si está después, hay que copiar desde el final hacia atrás: `i = len` y `while (i-- > 0)`.",
+    rel: ["memcpy"],
+    hint: "Si dst < src se puede copiar normal. Si no, hay que empezar por el último byte."
+  },
+  {
+    id: "s3q9", s: 3, st: 3, fn: "strlcpy", type: "build",
+    q: "Construye `ft_strlcpy`. Sobran dos piezas.",
+    sol: [
+      "size_t  ft_strlcpy(char *dst, const char *src, size_t size)",
+      "{",
+      "    size_t  i;",
+      "    i = 0;",
+      "    if (size > 0)",
+      "    {",
+      "        while (src[i] && i < size - 1)",
+      "        {",
+      "            dst[i] = src[i];",
+      "            i++;",
+      "        }",
+      "        dst[i] = '\\0';",
+      "    }",
+      "    while (src[i])",
+      "        i++;",
+      "    return (i);",
+      "}"
+    ],
+    extra: ["        while (src[i] && i < size)", "    return (i + 1);"],
+    why: "Se copian como mucho `size - 1` caracteres para dejar sitio al `'\\0'`, que sólo se escribe si `size > 0`. Luego se sigue contando hasta el final de `src`, porque la función devuelve la longitud de `src`, no lo que se copió.",
+    rel: ["strlen"],
+    hint: "Copia como mucho size - 1 caracteres. El valor de retorno es la longitud de src entera."
+  },
+  {
+    id: "s4q12", s: 4, st: 3, fn: "strjoin", type: "build",
+    q: "Construye `ft_strjoin` con las piezas. Sobran dos.",
+    sol: [
+      "char    *ft_strjoin(char const *s1, char const *s2)",
+      "{",
+      "    char    *res;",
+      "    size_t  len1;",
+      "    size_t  len2;",
+      "    len1 = ft_strlen(s1);",
+      "    len2 = ft_strlen(s2);",
+      "    res = malloc(len1 + len2 + 1);",
+      "    if (!res)",
+      "        return (NULL);",
+      "    ft_strlcpy(res, s1, len1 + 1);",
+      "    ft_strlcat(res, s2, len1 + len2 + 1);",
+      "    return (res);",
+      "}"
+    ],
+    extra: ["    res = malloc(len1 + len2);", "    ft_strlcpy(res, s2, len2 + 1);"],
+    why: "Hay que reservar `len1 + len2 + 1` bytes (el `+ 1` es el `'\\0'`), comprobar el `malloc`, copiar `s1` con `ft_strlcpy` y añadir `s2` con `ft_strlcat`. Ambas reciben el tamaño total del buffer, no el de la parte que añaden.",
+    rel: ["strlen", "strlcpy", "strlcat", "malloc"],
+    hint: "Primero longitudes, luego malloc con el + 1, comprobación y por último las dos copias."
+  },
+  {
+    id: "s5q8", s: 5, st: 3, fn: "putnbr_fd", type: "build",
+    q: "Construye `ft_putnbr_fd` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_putnbr_fd(int n, int fd)",
+      "{",
+      "    long    nb;",
+      "    nb = n;",
+      "    if (nb < 0)",
+      "    {",
+      "        ft_putchar_fd('-', fd);",
+      "        nb = -nb;",
+      "    }",
+      "    if (nb >= 10)",
+      "        ft_putnbr_fd(nb / 10, fd);",
+      "    ft_putchar_fd(nb % 10 + '0', fd);",
+      "}"
+    ],
+    extra: ["        n = -n;", "    if (nb > 10)"],
+    why: "Se copia `n` a un `long` para que `-nb` no desborde con `INT_MIN`. Se imprime el signo, se llama recursivamente con `nb / 10` mientras queden al menos dos cifras y al final se imprime la última. Con `nb > 10` el número 10 se imprimiría mal.",
+    rel: ["putchar_fd"],
+    hint: "Usa un long para el caso INT_MIN. La recursión imprime primero las cifras de más peso."
+  },
+  {
+    id: "s6q11", s: 6, st: 3, fn: "lstadd_back", type: "build",
+    q: "Construye `ft_lstadd_back` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_lstadd_back(t_list **lst, t_list *new)",
+      "{",
+      "    t_list  *last;",
+      "    if (!lst || !new)",
+      "        return ;",
+      "    if (!*lst)",
+      "    {",
+      "        *lst = new;",
+      "        return ;",
+      "    }",
+      "    last = *lst;",
+      "    while (last->next)",
+      "        last = last->next;",
+      "    last->next = new;",
+      "}"
+    ],
+    extra: ["    while (last)", "    new->next = last;"],
+    why: "Si la lista está vacía, `*lst` pasa a ser `new`. Si no, se recorre hasta el último nodo (`last->next == NULL`) y se enlaza `new` detrás. Con `while (last)` el puntero acabaría en NULL y ya no habría a quién enlazar.",
+    rel: ["lstnew"],
+    hint: "Hay que parar en el último nodo, no pasarse de él. Y la lista vacía es un caso aparte."
+  }
+);
+/* orden estable por sector y dificultad: las nuevas se colocan tras las existentes de su misma dificultad */
+Q.sort((a, b) => a.s - b.s || a.st - b.st);
 /* ===== Motor del juego ===== */
 (function () {
   "use strict";
@@ -1206,7 +1368,7 @@ t_list  *ft_lstnew(void *content)
   function render() { renderChrome(); renderScreen(); keepTermVisible(); }
 
   /* ---- navegación ---- */
-  function resetQ() { S.sel = null; S.msel = new Set(); S.fill = ""; S.checked = false; S.ok = null; S.hint = false; }
+  function resetQ() { S.sel = null; S.msel = new Set(); S.fill = ""; S.checked = false; S.ok = null; S.hint = false; S.built = []; S.pool = null; }
   function openSector(n) { if (!unlocked(n)) return; S.sector = n; S.view = "sector"; S.armed = false; render(); }
   function startRun(n, review) {
     S.sector = n; S.review = !!review;
@@ -1230,6 +1392,7 @@ t_list  *ft_lstnew(void *content)
     if (!q || S.checked) return false;
     if (q.type === "multi") return S.msel.size > 0;
     if (q.type === "fill") return norm(S.fill).length > 0;
+    if (q.type === "build") return S.built.length > 0;
     return S.sel !== null;
   }
   function select(i) {
@@ -1253,11 +1416,26 @@ t_list  *ft_lstnew(void *content)
     if (b) b.disabled = !canCheck();
   }
   function isRight(q) {
+    if (q.type === "build") return S.built.length === q.sol.length && S.built.every((p, i) => S.pool[p] === q.sol[i]);
     if (q.type === "choice") return S.sel === q.ans;
     if (q.type === "bug") return q.ans.indexOf(S.sel) >= 0;
     if (q.type === "fill") return q.accept.some((a) => norm(a) === norm(S.fill));
     if (q.type === "multi") return S.msel.size === q.ans.length && q.ans.every((i) => S.msel.has(i));
     return false;
+  }
+  /* ---- tipo build: piezas de código ---- */
+  function renderBuild() {
+    const q = cur(), pool = $("pool"), built = $("built");
+    if (!q || !pool || !built) return;
+    const used = new Set(S.built);
+    pool.innerHTML = S.pool.map((t, i) => '<button class="piece" data-p="' + i + '"' + (used.has(i) || S.checked ? " disabled" : "") + (used.has(i) ? ' aria-hidden="true"' : "") + ">" + (hl(t) || " ") + "</button>").join("");
+    built.innerHTML = S.built.length ? S.built.map((p, k) => {
+      const cls = S.checked ? (S.pool[p] === q.sol[k] ? " right" : " wrong") : "";
+      return '<button class="line' + cls + '" data-b="' + k + '"' + (S.checked ? " disabled" : "") + '><span class="no">' + (k + 1) + "</span><span>" + (hl(S.pool[p]) || " ") + "</span></button>";
+    }).join("") : '<p class="empty">Toca las piezas de arriba para colocarlas aquí, en orden. Toca una línea colocada para quitarla.</p>';
+    pool.querySelectorAll("[data-p]").forEach((el) => el.addEventListener("click", () => { if (!S.checked) { S.built.push(+el.dataset.p); renderBuild(); const b = $("check"); if (b) b.disabled = !canCheck(); } }));
+    built.querySelectorAll("[data-b]").forEach((el) => el.addEventListener("click", () => { if (!S.checked) { S.built.splice(+el.dataset.b, 1); renderBuild(); const b = $("check"); if (b) b.disabled = !canCheck(); } }));
+    const b = $("check"); if (b && !S.checked) b.disabled = !canCheck();
   }
   function check() {
     const q = cur();
@@ -1292,6 +1470,7 @@ t_list  *ft_lstnew(void *content)
         else if (i === S.sel) el.classList.add("wrong");
       }
     });
+    if (q.type === "build") renderBuild();
     const inp = $("fill");
     if (inp) { inp.disabled = true; inp.classList.add(S.ok ? "right" : "wrong"); }
     $("check").disabled = true;
@@ -1302,6 +1481,7 @@ t_list  *ft_lstnew(void *content)
     const deps = DEPS[q.fn];
     let verdict = S.ok ? (S.review ? "OK" : "OK · +" + gain + " XP") : (S.review ? "NO ES ESA" : S.lives <= 0 ? "SEGMENTATION FAULT" : "ERROR · −1 VIDA");
     let extra = "";
+    if (!S.ok && q.type === "build") extra = '<p class="explain">Solución:</p><pre class="code">' + q.sol.map(hl).join("\n") + "</pre>";
     if (!S.ok && q.type === "fill") extra = '<p class="explain">Respuesta válida: <code>' + esc(q.accept[0]) + "</code></p>";
     const rel = (q.rel || []).filter((r) => r !== q.fn);
     let relHtml = "";
@@ -1373,7 +1553,7 @@ t_list  *ft_lstnew(void *content)
 
   const TYPE_LABEL = {
     choice: "elige una respuesta", multi: "marca todas las correctas",
-    fill: "completa el código", bug: "encuentra la línea con el error"
+    fill: "completa el código", build: "ordena el código", bug: "encuentra la línea con el error"
   };
 
   function screenQ() {
@@ -1384,6 +1564,13 @@ t_list  *ft_lstnew(void *content)
     if (q.type === "bug") {
       body = '<div class="lines" role="group" aria-label="Líneas de código">' +
         q.lines.map((l, i) => '<button class="line" data-i="' + i + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(l) || " ") + "</span></button>").join("") + "</div>";
+    } else if (q.type === "build") {
+      if (!S.pool) {
+        const all = q.sol.concat(q.extra || []);
+        for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = all[i]; all[i] = all[j]; all[j] = t; }
+        S.pool = all;
+      }
+      body = '<div class="bhead">Piezas</div><div class="pool" id="pool"></div><div class="bhead">Tu función</div><div class="lines built" id="built"></div>';
     } else {
       if (q.code) body += '<pre class="code">' + hl(q.code) + "</pre>";
       if (q.type === "fill") {
@@ -1396,8 +1583,9 @@ t_list  *ft_lstnew(void *content)
     $("screen").innerHTML =
       '<div class="tag">' + label(q.fn) + " · " + TYPE_LABEL[q.type] + "</div>" +
       '<p class="qtext">' + fmt(q.q) + "</p>" + body +
-      '<div class="actions"><button class="btn" id="check" disabled>COMPROBAR</button><button class="btn ghost" id="hintb">PISTA [P]</button><span class="kbd">Enter para comprobar</span></div>' +
+      '<div class="actions"><button class="btn" id="check" disabled>COMPROBAR</button><button class="btn ghost" id="hintb">PISTA<span class="kbd-inline"> [P]</span></button><span class="kbd">Enter para comprobar</span></div>' +
       '<div id="hint"></div><div id="res"></div>';
+    if (q.type === "build") renderBuild();
     $("screen").querySelectorAll("[data-i]").forEach((el) => el.addEventListener("click", () => select(+el.dataset.i)));
     $("check").addEventListener("click", check);
     $("hintb").addEventListener("click", () => {
@@ -1473,7 +1661,10 @@ t_list  *ft_lstnew(void *content)
     const tag = e.target && e.target.tagName;
     if (tag === "INPUT") return;
     const q = cur();
-    if (e.key === "Enter") {
+    if (e.key === "Backspace" && q.type === "build" && !S.checked) {
+      e.preventDefault();
+      if (S.built.length) { S.built.pop(); renderBuild(); }
+    } else if (e.key === "Enter") {
       if (tag === "BUTTON") return;
       e.preventDefault();
       if (!S.checked) check(); else next();
