@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Libft Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=VT323&display=swap">
+<style>
+/* Concepto: monitor de fósforo ámbar. Una terminal central con la pregunta,
+   mapa de sectores arriba e inventario de funciones dominadas a un lado. */
+:root {
+  --bg: #120f0a;
+  --panel: #1a150d;
+  --panel-2: #221b10;
+  --line: #3b2f1a;
+  --fg: #ffcf7a;
+  --dim: #9c7c43;
+  --faint: #5d4a28;
+  --cyan: #7fd6c8;
+  --ok: #a6e36b;
+  --bad: #ff7058;
+  --ink: #120f0a;
+  --font-display: "VT323", "Courier New", monospace;
+  --font-body: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 20px 40px;
+  background-image: repeating-linear-gradient(0deg, rgba(255, 207, 122, .035) 0 1px, transparent 1px 3px);
+}
+.app { max-width: 1080px; margin: 0 auto; display: grid; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+::selection { background: var(--fg); color: var(--ink); }
+
+/* barra de título */
+.titlebar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  border: 1px solid var(--line); background: var(--panel); padding: 8px 14px;
+}
+.brand { font-family: var(--font-display); font-size: 30px; line-height: 1; letter-spacing: .06em; text-shadow: 0 0 10px rgba(255, 207, 122, .45); }
+.brand small { font-size: 18px; color: var(--dim); letter-spacing: .04em; margin-left: 8px; }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--dim); }
+.stats b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.lives b { letter-spacing: .15em; color: var(--bad); }
+
+/* mapa de sectores */
+.map { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.sector {
+  text-align: left; border: 1px solid var(--line); background: var(--panel); padding: 10px 10px 8px;
+  display: grid; gap: 2px; align-content: start; min-width: 0;
+}
+.sector .hex { font-family: var(--font-display); font-size: 20px; color: var(--dim); line-height: 1; }
+.sector .nm { font-weight: 600; font-size: 12px; letter-spacing: .08em; overflow-wrap: anywhere; }
+.sector .pg { font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.sector .bar { height: 4px; background: var(--line); margin-top: 6px; }
+.sector .bar i { display: block; height: 100%; width: 0; background: var(--fg); }
+.sector:hover:not(:disabled) { border-color: var(--fg); }
+.sector[aria-current="true"] { border-color: var(--fg); background: var(--panel-2); box-shadow: 0 0 0 1px var(--fg) inset; }
+.sector:disabled { cursor: not-allowed; opacity: .45; }
+.sector.done .bar i { background: var(--ok); }
+.sector.done .hex { color: var(--ok); }
+
+/* zona principal */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 16px; align-items: start; }
+.term { border: 1px solid var(--fg); background: var(--panel); box-shadow: 0 0 24px rgba(255, 207, 122, .08); min-width: 0; }
+.term-head {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px;
+  background: var(--fg); color: var(--ink); padding: 4px 14px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+}
+.term-body { padding: 18px 18px 20px; display: grid; gap: 16px; min-width: 0; }
+.stars { letter-spacing: .15em; }
+.tag { font-size: 12px; color: var(--cyan); letter-spacing: .06em; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: .04em; }
+h1 { font-size: 42px; line-height: 1; }
+h2 { font-size: 28px; line-height: 1.1; }
+p { margin: 0; }
+.qtext { font-size: 15px; max-width: 70ch; }
+.qtext code, .explain code, .hint code, .opt code { color: var(--cyan); font-family: var(--font-body); }
+.prompt { color: var(--dim); }
+.prompt::before { content: "> "; color: var(--fg); }
+
+/* código */
+pre.code {
+  margin: 0; padding: 12px 14px; background: var(--bg); border: 1px solid var(--line);
+  overflow-x: auto; font-size: 13px; line-height: 1.55; tab-size: 4; max-width: 100%;
+}
+pre.code .k { color: var(--cyan); }
+pre.code .t { color: #f0a35e; }
+pre.code .s { color: var(--ok); }
+pre.code .n { color: #e6c0ff; }
+pre.code .c { color: var(--faint); }
+pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px solid var(--fg); padding: 0 .5ch; }
+.lines { display: grid; border: 1px solid var(--line); background: var(--bg); overflow-x: auto; }
+.line {
+  display: grid; grid-template-columns: 34px 1fr; text-align: left; background: transparent; border: 0;
+  border-left: 3px solid transparent; padding: 0 10px 0 0; font-size: 13px; line-height: 1.7; white-space: pre; min-width: max-content; width: 100%;
+}
+.line .no { color: var(--faint); text-align: right; padding-right: 10px; user-select: none; font-variant-numeric: tabular-nums; }
+.line:hover:not(:disabled) { background: var(--panel-2); }
+.line.picked { border-left-color: var(--fg); background: var(--panel-2); }
+.line.right { border-left-color: var(--ok); background: rgba(166, 227, 107, .12); }
+.line.wrong { border-left-color: var(--bad); background: rgba(255, 112, 88, .12); }
+.line:disabled { cursor: default; }
+
+/* opciones */
+.opts { display: grid; gap: 8px; }
+.opt {
+  display: grid; grid-template-columns: 34px 1fr; gap: 4px; align-items: start; text-align: left; width: 100%;
+  background: var(--bg); border: 1px solid var(--line); padding: 8px 12px; min-width: 0; overflow-wrap: anywhere;
+}
+.opt .key { color: var(--dim); font-weight: 600; }
+.opt:hover:not(:disabled) { border-color: var(--fg); }
+.opt.picked { border-color: var(--fg); background: var(--panel-2); }
+.opt.picked .key { color: var(--fg); }
+.opt.right { border-color: var(--ok); background: rgba(166, 227, 107, .12); }
+.opt.wrong { border-color: var(--bad); background: rgba(255, 112, 88, .12); }
+.opt.missed { border-style: dashed; border-color: var(--ok); }
+.opt:disabled { cursor: default; }
+.multi-note { font-size: 12px; color: var(--dim); }
+
+.fillrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.fillrow label { color: var(--dim); }
+.fillrow input {
+  font: inherit; background: var(--bg); color: var(--fg); border: 1px solid var(--fg); padding: 6px 10px; min-width: 0; flex: 1 1 200px; max-width: 360px;
+  caret-color: var(--fg);
+}
+.fillrow input:disabled { border-color: var(--line); }
+.fillrow input.right { border-color: var(--ok); color: var(--ok); }
+.fillrow input.wrong { border-color: var(--bad); color: var(--bad); }
+
+/* botones */
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn {
+  background: transparent; border: 1px solid var(--fg); padding: 7px 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 12px;
+}
+.btn:hover:not(:disabled) { background: var(--fg); color: var(--ink); }
+.btn:disabled { border-color: var(--line); color: var(--faint); cursor: not-allowed; }
+.btn.ghost { border-color: var(--line); color: var(--dim); }
+.btn.ghost:hover:not(:disabled) { border-color: var(--dim); background: transparent; color: var(--fg); }
+.kbd { font-size: 11px; color: var(--dim); }
+
+/* feedback */
+.result { border: 1px solid var(--line); padding: 12px 14px; display: grid; gap: 8px; background: var(--bg); }
+.result.ok { border-color: var(--ok); }
+.result.bad { border-color: var(--bad); }
+.verdict { font-family: var(--font-display); font-size: 26px; line-height: 1; letter-spacing: .05em; }
+.result.ok .verdict { color: var(--ok); }
+.result.bad .verdict { color: var(--bad); }
+.explain { max-width: 70ch; }
+.rel { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 12px; color: var(--dim); }
+.chip {
+  font-size: 12px; padding: 1px 8px; border: 1px solid var(--line); color: var(--dim); background: transparent; line-height: 1.6;
+}
+.chip.on { border-color: var(--fg); color: var(--fg); }
+.chip.link { border-color: var(--cyan); color: var(--cyan); }
+.hint { color: var(--dim); font-size: 13px; border-left: 2px solid var(--line); padding-left: 10px; }
+
+/* inventario */
+.inv { border: 1px solid var(--line); background: var(--panel); min-width: 0; }
+.inv-head { padding: 6px 14px; border-bottom: 1px solid var(--line); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); display: flex; justify-content: space-between; gap: 8px; }
+.inv-body { padding: 12px 14px 14px; display: grid; gap: 14px; }
+.inv-group { display: grid; gap: 6px; }
+.inv-group h3 { margin: 0; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fn { font-size: 12px; padding: 1px 8px; border: 1px dashed var(--faint); color: var(--faint); background: transparent; }
+.fn.got { border: 1px solid var(--fg); color: var(--fg); }
+.fn.sel { background: var(--fg); color: var(--ink); border-color: var(--fg); }
+.depinfo { border-top: 1px solid var(--line); padding-top: 10px; font-size: 12px; color: var(--dim); min-height: 3.2em; }
+.depinfo b { color: var(--fg); font-weight: 600; }
+
+/* pantallas de texto */
+.boot { font-size: 13px; color: var(--dim); display: grid; gap: 2px; }
+.boot .ok { color: var(--ok); }
+.final-score { font-family: var(--font-display); font-size: 64px; line-height: 1; text-shadow: 0 0 14px rgba(255, 207, 122, .5); }
+.caret::after { content: "█"; animation: blink 1.1s steps(1) infinite; margin-left: 2px; }
+@keyframes blink { 50% { opacity: 0; } }
+.status-line { font-size: 12px; color: var(--dim); }
+.foot { font-size: 11px; color: var(--faint); text-align: center; }
+
+@media (max-width: 860px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .map { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 460px) {
+  body { font-size: 13px; }
+  .term-body { padding: 14px 12px 16px; }
+  h1 { font-size: 34px; }
+  .map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret::after { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="titlebar">
+    <div class="brand">LIBFT_QUEST<small>v1.0 · by coscosgram</small></div>
+    <div class="stats" aria-label="Estado">
+      <span class="lives">Vidas <b id="st-lives">♥♥♥</b></span>
+      <span>XP <b id="st-xp">0</b></span>
+      <span>Rango <b id="st-rank">BECARIO</b></span>
+    </div>
+  </header>
+
+  <nav class="map" id="map" aria-label="Sectores"></nav>
+
+  <div class="main">
+    <section class="term" id="term" aria-live="polite">
+      <div class="term-head"><span id="th-left">libft@42:~$</span><span id="th-right"></span></div>
+      <div class="term-body" id="screen">
+        <h1>LIBFT_QUEST</h1>
+        <p class="qtext">Cargando el sistema<span class="caret"></span></p>
+      </div>
+    </section>
+
+    <aside class="inv" aria-label="Inventario de funciones">
+      <div class="inv-head"><span>Inventario</span><span id="inv-count">0/0</span></div>
+      <div class="inv-body">
+        <div id="inv-groups"></div>
+        <div class="depinfo" id="depinfo">Pulsa una función para ver de cuáles depende.</div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="foot" id="foot">Tu progreso se guarda sólo en este navegador.</p>
+  <p class="foot">Hecho por coscosgram · libft_quest.exe</p>
+</div>
+<script>
+/* ===== Datos: sectores, dependencias y preguntas (1/2) ===== */
+const SECTORS = [
+  { n: 1, hex: "0x01", name: "CARACTERES", blurb: "ctype y strlen: las piezas más pequeñas." },
+  { n: 2, hex: "0x02", name: "MEMORIA", blurb: "memset, memcpy y compañía: bytes, punteros y solapes." },
+  { n: 3, hex: "0x03", name: "CADENAS", blurb: "Comparar, copiar y buscar dentro de strings." },
+  { n: 4, hex: "0x04", name: "HEAP", blurb: "malloc entra en juego: funciones que construyen sobre otras." },
+  { n: 5, hex: "0x05", name: "FD", blurb: "Escribir en descriptores de archivo." },
+  { n: 6, hex: "0x06", name: "LISTAS", blurb: "Listas enlazadas: el bonus que consolida todo lo anterior." }
+];
+
+/* Qué usa cada función (las de libc van sin el prefijo ft_) */
+const LIBC = ["malloc", "free", "write"];
+const DEPS = {
+  isalnum: ["isalpha", "isdigit"],
+  bzero: ["memset"],
+  memmove: ["memcpy"],
+  strlcat: ["strlen", "strlcpy"],
+  strnstr: ["strlen", "strncmp"],
+  strdup: ["strlen", "memcpy", "malloc"],
+  calloc: ["bzero", "malloc"],
+  substr: ["strlen", "strlcpy", "malloc"],
+  strjoin: ["strlen", "strlcpy", "strlcat", "malloc"],
+  strtrim: ["strchr", "strlen", "substr"],
+  split: ["substr", "malloc", "free"],
+  itoa: ["malloc"],
+  strmapi: ["strlen", "malloc"],
+  putchar_fd: ["write"],
+  putstr_fd: ["strlen", "write"],
+  putendl_fd: ["putstr_fd", "putchar_fd"],
+  putnbr_fd: ["putchar_fd"],
+  lstnew: ["malloc"],
+  lstadd_back: ["lstlast"],
+  lstclear: ["lstdelone", "free"],
+  lstmap: ["lstnew", "lstadd_back", "lstclear", "lstdelone"]
+};
+
+const L = (s) => s.split("\n");
+const Q = [];
+
+/* ---------- SECTOR 1 · CARACTERES ---------- */
+Q.push(
+  {
+    id: "s1q1", s: 1, st: 1, fn: "isdigit", type: "choice",
+    q: "¿Qué valores de `c` hacen que `ft_isdigit(c)` devuelva distinto de cero?",
+    opts: [
+      "Los códigos ASCII del 48 al 57 ('0' a '9')",
+      "Los códigos ASCII del 0 al 9",
+      "Los códigos ASCII del 49 al 58",
+      "Cualquier valor menor que 128"
+    ],
+    ans: 0,
+    why: "Los dígitos ASCII empiezan en '0' (48) y acaban en '9' (57). Compara con los caracteres literales y no con números mágicos: `c >= '0' && c <= '9'`. Devuelve distinto de cero si es dígito y 0 si no lo es.",
+    rel: ["isalnum"],
+    hint: "El carácter '0' no vale 0, vale 48."
+  },
+  {
+    id: "s1q2", s: 1, st: 1, fn: "toupper", type: "fill",
+    q: "Completa la comparación para que sólo se conviertan las minúsculas.",
+    code: `int ft_toupper(int c)
+{
+    if (c >= 'a' && c <= '____')
+        return (c - 32);
+    return (c);
+}`,
+    accept: ["z", "'z'"],
+    why: "Las minúsculas van de 'a' (97) a 'z' (122) y la distancia a las mayúsculas es 32. Escribir `c - 'a' + 'A'` es más legible y no obliga a recordar el 32.",
+    rel: ["tolower"],
+    hint: "Es la última letra del alfabeto inglés."
+  },
+  {
+    id: "s1q3", s: 1, st: 1, fn: "isalnum", type: "multi",
+    q: "Un carácter es alfanumérico si es letra o dígito. ¿Qué funciones tuyas reutilizarías para escribir `ft_isalnum` en una línea?",
+    opts: ["ft_isalpha", "ft_isdigit", "ft_toupper", "ft_strlen"],
+    ans: [0, 1],
+    why: "`return (ft_isalpha(c) || ft_isdigit(c));` Es tu primera relación entre funciones: una función nueva construida con dos que ya dominas.",
+    rel: ["isalpha", "isdigit"],
+    hint: "Piensa en las dos condiciones que debe cumplir el carácter."
+  },
+  {
+    id: "s1q4", s: 1, st: 2, fn: "strlen", type: "bug",
+    q: "Este `ft_strlen` devuelve basura de vez en cuando. ¿Qué línea contiene el fallo?",
+    lines: L(`size_t  ft_strlen(const char *s)
+{
+    size_t  i;
+
+    while (s[i])
+        i++;
+    return (i);
+}`),
+    ans: [2],
+    why: "`i` no está inicializada: vale lo que hubiera en la pila. Hace falta `i = 0;` antes del bucle. La Norma no permite inicializar en la propia declaración, así que va en una línea aparte.",
+    rel: [],
+    hint: "Mira qué valor tiene `i` la primera vez que se evalúa `s[i]`."
+  },
+  {
+    id: "s1q5", s: 1, st: 2, fn: "isprint", type: "choice",
+    q: "¿Qué rango cumple un carácter imprimible según `ft_isprint`?",
+    opts: [
+      "32 a 126, con el espacio incluido",
+      "33 a 126, con el espacio excluido",
+      "32 a 127",
+      "0 a 127"
+    ],
+    ans: 0,
+    why: "Los imprimibles van del espacio (32) a la tilde ~ (126). El 127 es DEL, un carácter de control. El rango 0 a 127 es el de `ft_isascii`.",
+    rel: ["isascii"],
+    hint: "El espacio se ve como un hueco, pero sí ocupa sitio al imprimir."
+  },
+  {
+    id: "s1q6", s: 1, st: 2, fn: "strlen", type: "choice",
+    q: "¿Qué devuelve `ft_strlen(\"42\\0Madrid\")`?",
+    opts: ["2", "8", "9", "Depende del compilador"],
+    ans: 0,
+    why: "`ft_strlen` cuenta hasta el primer carácter nulo (`\\0`), que aquí está en la posición 2. Lo que va detrás sigue en memoria, pero para C ya no forma parte de la cadena.",
+    rel: [],
+    hint: "¿Dónde termina una cadena de C?"
+  },
+  {
+    id: "s1q7", s: 1, st: 3, fn: "toupper", type: "choice",
+    q: "¿Por qué `ft_toupper` recibe un `int` y no un `char`?",
+    opts: [
+      "Para admitir `EOF` (-1) además de cualquier valor de unsigned char",
+      "Porque un `char` no puede guardar letras",
+      "Para que la función sea más rápida",
+      "Porque la Norma lo exige"
+    ],
+    ans: 0,
+    why: "Las funciones de `ctype.h` reciben un `int` que debe valer `EOF` o un valor representable como `unsigned char`. Así se pueden encadenar con `getc` sin perder el fin de fichero. Tu `ft_toupper` debe devolver ese `int` intacto cuando no hay conversión.",
+    rel: ["tolower"],
+    hint: "Piensa en el valor que devuelve `getchar` al llegar al final."
+  }
+);
+
+/* ---------- SECTOR 2 · MEMORIA ---------- */
+Q.push(
+  {
+    id: "s2q1", s: 2, st: 1, fn: "memset", type: "choice",
+    q: "`ft_memset` rellena bytes. ¿Qué puntero local necesitas para escribir de byte en byte sobre un `void *s`?",
+    opts: [
+      "`unsigned char *`",
+      "`int *`",
+      "`char **`",
+      "Ninguno: `s[i] = c` funciona sobre un `void *`"
+    ],
+    ans: 0,
+    why: "Un `void *` no se puede indexar ni desreferenciar porque no tiene tamaño de elemento. Lo conviertes a `unsigned char *` para avanzar un byte cada vez. El valor `c` se interpreta además como `unsigned char`.",
+    rel: ["bzero", "memcpy"],
+    hint: "Necesitas un tipo que mida exactamente un byte."
+  },
+  {
+    id: "s2q2", s: 2, st: 1, fn: "bzero", type: "choice",
+    q: "`ft_bzero(s, n)` pone a cero `n` bytes. ¿Cómo la escribirías reutilizando una función que ya tienes?",
+    opts: [
+      "`ft_memset(s, 0, n);`",
+      "`ft_memcpy(s, 0, n);`",
+      "`ft_memchr(s, 0, n);`",
+      "`ft_strlen(s);`"
+    ],
+    ans: 0,
+    why: "`bzero` es un `memset` con el valor fijado en 0. Es la forma más corta de ver cómo una función se apoya en otra.",
+    rel: ["memset"],
+    hint: "¿Qué función rellena una zona con un valor?"
+  },
+  {
+    id: "s2q3", s: 2, st: 2, fn: "memcpy", type: "fill",
+    q: "Completa el hueco: ¿de qué puntero se lee cada byte?",
+    code: `void    *ft_memcpy(void *dst, const void *src, size_t n)
+{
+    unsigned char        *d;
+    const unsigned char  *s;
+    size_t               i;
+
+    d = dst;
+    s = src;
+    i = 0;
+    while (i < n)
+    {
+        d[i] = ____[i];
+        i++;
+    }
+    return (dst);
+}`,
+    accept: ["s"],
+    why: "Lees de `s` (origen) y escribes en `d` (destino). Se devuelve `dst`, el puntero original, tal como pide el subject.",
+    rel: ["memmove"],
+    hint: "Escribes en `d`, así que lees del otro."
+  },
+  {
+    id: "s2q4", s: 2, st: 2, fn: "memcpy", type: "bug",
+    q: "Esta copia escribe un byte de más. ¿Qué línea tiene el error?",
+    lines: L(`void    *ft_memcpy(void *dst, const void *src, size_t n)
+{
+    unsigned char        *d;
+    const unsigned char  *s;
+    size_t               i;
+
+    d = dst;
+    s = src;
+    i = 0;
+    while (i <= n)
+    {
+        d[i] = s[i];
+        i++;
+    }
+    return (dst);
+}`),
+    ans: [9],
+    why: "Con `n` bytes los índices válidos van de 0 a n-1. Con `<=` copias `n + 1` bytes y desbordas el destino. La condición correcta es `i < n`.",
+    rel: [],
+    hint: "Cuenta cuántas vueltas da el bucle si n vale 3."
+  },
+  {
+    id: "s2q5", s: 2, st: 3, fn: "memmove", type: "choice",
+    q: "En `ft_memmove`, `dst` queda por delante de `src` y las regiones se solapan. ¿En qué sentido copias?",
+    opts: [
+      "Hacia atrás, del último byte al primero",
+      "Hacia delante, del primer byte al último",
+      "Da igual, el resultado es el mismo",
+      "No se puede resolver sin un buffer en el heap"
+    ],
+    ans: 0,
+    why: "Si copias hacia delante, sobrescribes bytes de `src` que aún no has leído. Copiando desde el final, cada byte se lee antes de que lo pisen.",
+    rel: ["memcpy"],
+    hint: "Fíjate en qué bytes del origen quedan pisados primero."
+  },
+  {
+    id: "s2q6", s: 2, st: 3, fn: "memmove", type: "choice",
+    q: "Con `char buf[] = \"abcdef\";`, ¿qué contiene `buf` tras `ft_memmove(buf + 2, buf, 4)`?",
+    opts: ["ababcd", "ababab", "abcdef", "cdabcd"],
+    ans: 0,
+    why: "Copiando hacia atrás: `buf[5] = buf[3]` (d), `buf[4] = buf[2]` (c), `buf[3] = buf[1]` (b) y `buf[2] = buf[0]` (a). Resultado: ababcd. Un `memcpy` ingenuo hacia delante daría ababab.",
+    rel: ["memcpy"],
+    hint: "Escribe los seis índices en papel y ve copiando desde el final."
+  },
+  {
+    id: "s2q7", s: 2, st: 3, fn: "memmove", type: "multi",
+    q: "¿En qué casos puedes copiar hacia delante sin riesgo, como haría `ft_memcpy`?",
+    opts: [
+      "`dst < src`",
+      "`dst == src`",
+      "`dst > src` y las regiones se solapan",
+      "`dst > src` y las regiones no se solapan"
+    ],
+    ans: [0, 1, 3],
+    why: "Copiar hacia delante sólo falla cuando el destino empieza dentro del origen y por delante. Por eso un `ft_memmove` habitual es: si `dst < src`, copia como `memcpy`; si no, copia hacia atrás.",
+    rel: ["memcpy"],
+    hint: "Hay tres casos seguros y uno peligroso."
+  },
+  {
+    id: "s2q8", s: 2, st: 3, fn: "memcmp", type: "choice",
+    q: "¿Qué signo devuelve `ft_memcmp(\"\\200\", \"\\0\", 1)`?",
+    opts: ["Positivo", "Negativo", "Cero", "Indefinido"],
+    ans: 0,
+    why: "`memcmp` compara como `unsigned char`: 0x80 (128) es mayor que 0. Si comparases como `char` con signo, 0x80 valdría -128 y saldría negativo. Convierte siempre con `(unsigned char)`.",
+    rel: ["strncmp"],
+    hint: "\\200 en octal es 128."
+  }
+);
+
+/* ---------- SECTOR 3 · CADENAS ---------- */
+Q.push(
+  {
+    id: "s3q1", s: 3, st: 1, fn: "strchr", type: "choice",
+    q: "Con `char *s = \"hola\";`, ¿qué devuelve `ft_strchr(s, 0)`?",
+    opts: [
+      "Un puntero al `\\0` final, es decir `s + 4`",
+      "NULL, porque 0 no es un carácter de la cadena",
+      "Un puntero a `s`",
+      "Depende del sistema"
+    ],
+    ans: 0,
+    why: "Para `strchr` el terminador forma parte de la cadena: si buscas `'\\0'`, devuelve su dirección. Es el caso que más se olvida y el que más prueban los testers.",
+    rel: ["strrchr"],
+    hint: "¿Hasta dónde recorre la función antes de rendirse?"
+  },
+  {
+    id: "s3q2", s: 3, st: 2, fn: "strncmp", type: "fill",
+    q: "Completa el valor de retorno: ¿qué cadena se resta del byte de `s1`?",
+    code: `int ft_strncmp(const char *s1, const char *s2, size_t n)
+{
+    size_t  i;
+
+    i = 0;
+    while (i < n && (s1[i] || s2[i]))
+    {
+        if (s1[i] != s2[i])
+            return ((unsigned char)s1[i] - (unsigned char)____[i]);
+        i++;
+    }
+    return (0);
+}`,
+    accept: ["s2"],
+    why: "Restas el byte de `s1` menos el de `s2`, ambos como `unsigned char`. El bucle se detiene al llegar a `n` o cuando las dos cadenas han terminado.",
+    rel: ["memcmp"],
+    hint: "La otra cadena de la comparación."
+  },
+  {
+    id: "s3q3", s: 3, st: 2, fn: "strlcpy", type: "choice",
+    q: "¿Qué devuelve `ft_strlcpy(dst, src, size)`?",
+    opts: [
+      "La longitud de `src`, haya cabido o no",
+      "El número de bytes copiados",
+      "El puntero `dst`",
+      "La longitud de `dst` después de copiar"
+    ],
+    ans: 0,
+    why: "Devuelve `ft_strlen(src)`: la longitud de la cadena que intentaba crear. Así quien llama detecta un truncado comprobando `ret >= size`.",
+    rel: ["strlen", "strlcat"],
+    hint: "Se parece a lo que te dice una función sobre lo que quería escribir."
+  },
+  {
+    id: "s3q4", s: 3, st: 2, fn: "strlcat", type: "multi",
+    q: "`ft_strlcat` necesita medir y copiar. ¿Qué funciones tuyas usarías?",
+    opts: ["ft_strlen", "ft_strlcpy", "ft_strchr", "ft_atoi"],
+    ans: [0, 1],
+    why: "Mides `dst` y `src` con `ft_strlen`, y copias lo que quepa con `ft_strlcpy` empezando al final de `dst`. Muchas funciones de cadenas son combinaciones de estas dos.",
+    rel: ["strlen", "strlcpy"],
+    hint: "Una mide, la otra copia."
+  },
+  {
+    id: "s3q5", s: 3, st: 3, fn: "strlcat", type: "choice",
+    q: "`dst` es un buffer de 8 bytes con \"ab\" y `src` es \"cdefghij\". ¿Qué devuelve `ft_strlcat(dst, src, 8)`?",
+    opts: ["10", "7", "8", "9"],
+    ans: 0,
+    why: "Devuelve `ft_strlen(dst) + ft_strlen(src)` = 2 + 8 = 10, siempre que `size > ft_strlen(dst)`. En `dst` caben 7 caracteres y el nulo, así que queda \"abcdefg\". Como 10 >= 8, sabes que hubo truncado.",
+    rel: ["strlcpy", "strlen"],
+    hint: "El retorno es la longitud que tendría el resultado completo."
+  },
+  {
+    id: "s3q6", s: 3, st: 3, fn: "atoi", type: "bug",
+    q: "`ft_atoi(\"\\t 42\")` devuelve 0. ¿Qué línea tiene el fallo?",
+    lines: L(`int ft_atoi(const char *nptr)
+{
+    int i;
+    int sign;
+    int res;
+
+    i = 0;
+    sign = 1;
+    res = 0;
+    while (nptr[i] == ' ')
+        i++;
+    if (nptr[i] == '-' || nptr[i] == '+')
+    {
+        if (nptr[i] == '-')
+            sign = -1;
+        i++;
+    }
+    while (nptr[i] >= '0' && nptr[i] <= '9')
+    {
+        res = res * 10 + (nptr[i] - '0');
+        i++;
+    }
+    return (res * sign);
+}`),
+    ans: [9],
+    why: "`isspace` considera espacio: ' ', \\t, \\n, \\v, \\f y \\r. Comparar sólo con ' ' deja fuera a los otros cinco. Lo correcto es `nptr[i] == ' ' || (nptr[i] >= 9 && nptr[i] <= 13)`.",
+    rel: ["isdigit"],
+    hint: "El tabulador no es un espacio, pero sí es un blanco."
+  },
+  {
+    id: "s3q7", s: 3, st: 3, fn: "strnstr", type: "choice",
+    q: "¿Qué devuelve `ft_strnstr(\"abc\", \"\", 0)`?",
+    opts: [
+      "Un puntero a \"abc\" (el `haystack`)",
+      "NULL, porque `len` es 0",
+      "Un puntero al final de la cadena",
+      "Es comportamiento indefinido"
+    ],
+    ans: 0,
+    why: "Si `needle` está vacía, la función devuelve `haystack` aunque `len` valga 0. Es el primer caso que compruebas, antes de entrar en ningún bucle.",
+    rel: ["strchr"],
+    hint: "Una cadena vacía aparece siempre al principio de cualquier otra."
+  },
+  {
+    id: "s3q8", s: 3, st: 3, fn: "strnstr", type: "multi",
+    q: "`ft_strnstr` busca una subcadena en los primeros `len` bytes. ¿Qué funciones tuyas le sirven?",
+    opts: ["ft_strlen", "ft_strncmp", "ft_strdup", "ft_atoi"],
+    ans: [0, 1],
+    why: "Mides `needle` con `ft_strlen` y, en cada posición candidata, comparas con `ft_strncmp(&haystack[i], needle, needle_len)`. El bucle se mantiene mientras `i + needle_len <= len`.",
+    rel: ["strlen", "strncmp"],
+    hint: "Necesitas la longitud de lo que buscas y una forma de comparar."
+  }
+);
+/* ===== Datos (2/2) ===== */
+
+/* ---------- SECTOR 4 · HEAP ---------- */
+Q.push(
+  {
+    id: "s4q1", s: 4, st: 2, fn: "strdup", type: "fill",
+    q: "Completa la reserva de memoria: ¿cuántos bytes extra necesita la copia?",
+    code: `char    *ft_strdup(const char *s)
+{
+    char    *copy;
+    size_t  len;
+
+    len = ft_strlen(s);
+    copy = malloc(len + ____);
+    if (!copy)
+        return (NULL);
+    ft_memcpy(copy, s, len + 1);
+    return (copy);
+}`,
+    accept: ["1"],
+    why: "Reservas `len + 1` bytes: el último es para el `\\0`. Olvidarlo es el error clásico y provoca lecturas fuera de rango más tarde. Fíjate también en que `ft_memcpy(copy, s, len + 1)` copia el nulo. Es una función construida con `ft_strlen` y `ft_memcpy`.",
+    rel: ["strlen", "memcpy"],
+    hint: "Piensa en el carácter que cierra toda cadena de C."
+  },
+  {
+    id: "s4q2", s: 4, st: 2, fn: "calloc", type: "choice",
+    q: "¿Qué combinación implementa `ft_calloc(count, size)`?",
+    opts: [
+      "`malloc(count * size)` y después `ft_bzero` sobre ese bloque",
+      "`malloc(count)` y después `ft_memset(p, size, count)`",
+      "`ft_strdup` de una cadena vacía, `count` veces",
+      "Sólo `malloc`, porque la memoria ya viene a cero"
+    ],
+    ans: 0,
+    why: "`calloc` es `malloc` más poner todo a cero. Aquí vuelves a usar `ft_bzero` (y por debajo, `ft_memset`). La memoria que entrega `malloc` no está inicializada.",
+    rel: ["bzero", "memset"],
+    hint: "¿Qué función del sector de memoria pone bytes a cero?"
+  },
+  {
+    id: "s4q3", s: 4, st: 3, fn: "strmapi", type: "choice",
+    q: "¿Cuál es la diferencia entre `ft_strmapi` y `ft_striteri`?",
+    opts: [
+      "`strmapi` devuelve una cadena nueva aplicando `f(i, c)`; `striteri` modifica la original con `f(i, &c)`",
+      "`strmapi` modifica la original y `striteri` crea una nueva",
+      "Ninguna, son sinónimos",
+      "`striteri` necesita `malloc` y `strmapi` no"
+    ],
+    ans: 0,
+    why: "`ft_strmapi` aplica `char f(unsigned int, char)` y guarda cada resultado en una cadena nueva, así que necesita `malloc`. `ft_striteri` aplica `void f(unsigned int, char *)` sobre la propia cadena y no reserva nada.",
+    rel: ["strlen"],
+    hint: "Fíjate en el tipo de retorno de cada función."
+  },
+  {
+    id: "s4q4", s: 4, st: 3, fn: "calloc", type: "choice",
+    q: "Con `ft_calloc(count, size)`, el producto `count * size` puede desbordar `size_t`. ¿Qué haces antes de multiplicar?",
+    opts: [
+      "Compruebas `size != 0 && count > SIZE_MAX / size` y devuelves NULL",
+      "Nada: el desbordamiento se corrige solo",
+      "Multiplicas usando `int` en vez de `size_t`",
+      "Llamas a `ft_strlen` sobre `count`"
+    ],
+    ans: 0,
+    why: "Si el producto desborda, `malloc` recibiría un tamaño pequeño y tu código escribiría fuera del bloque. Dividir en lugar de multiplicar detecta el problema sin sufrirlo. El `calloc` real devuelve NULL en ese caso.",
+    rel: ["bzero"],
+    hint: "Comparar con una división no puede desbordar."
+  },
+  {
+    id: "s4q5", s: 4, st: 3, fn: "strjoin", type: "multi",
+    q: "`ft_strjoin(s1, s2)` construye una cadena nueva. ¿Qué funciones tuyas combinas?",
+    opts: ["ft_strlen", "ft_strlcpy", "ft_strlcat", "ft_strchr", "ft_atoi"],
+    ans: [0, 1, 2],
+    why: "Mides ambas cadenas con `ft_strlen`, reservas `len1 + len2 + 1` con `malloc`, copias `s1` con `ft_strlcpy` y añades `s2` con `ft_strlcat`. Aquí se nota el valor de haber hecho bien el sector anterior.",
+    rel: ["strlen", "strlcpy", "strlcat"],
+    hint: "Medir, copiar y concatenar."
+  },
+  {
+    id: "s4q6", s: 4, st: 3, fn: "strjoin", type: "bug",
+    q: "`ft_strjoin(\"ab\", \"cd\")` funciona en tus pruebas, pero valgrind avisa de una escritura inválida. ¿Qué línea tiene el fallo?",
+    lines: L(`char    *ft_strjoin(char const *s1, char const *s2)
+{
+    char    *res;
+    size_t  len;
+
+    len = ft_strlen(s1) + ft_strlen(s2);
+    res = malloc(len);
+    if (!res)
+        return (NULL);
+    ft_strlcpy(res, s1, len + 1);
+    ft_strlcat(res, s2, len + 1);
+    return (res);
+}`),
+    ans: [6],
+    why: "Falta el byte del terminador: hay que reservar `len + 1`. Con `malloc(len)` el `\\0` se escribe fuera del bloque, y por eso valgrind lo marca como escritura inválida aunque el programa parezca funcionar.",
+    rel: ["strlcpy", "strlcat"],
+    hint: "Cuenta los bytes que ocupa \"abcd\" con su terminador."
+  },
+  {
+    id: "s4q7", s: 4, st: 3, fn: "substr", type: "choice",
+    q: "¿Qué debe devolver `ft_substr(s, start, len)` cuando `start` es mayor o igual que `ft_strlen(s)`?",
+    opts: [
+      "Una cadena vacía reservada con `malloc`",
+      "NULL",
+      "`s` sin cambios",
+      "Una cadena de `len` espacios"
+    ],
+    ans: 0,
+    why: "El subject no lo trata como un error: el resultado es una cadena vacía (un `malloc(1)` con un `\\0`). NULL se reserva para cuando falla `malloc`. Además, `len` se recorta a lo que realmente queda desde `start`.",
+    rel: ["strlen", "strlcpy"],
+    hint: "No hay nada que copiar, pero la función sigue devolviendo una cadena válida."
+  },
+  {
+    id: "s4q8", s: 4, st: 4, fn: "strtrim", type: "multi",
+    q: "`ft_strtrim(s1, set)` quita del principio y del final los caracteres que estén en `set`. ¿Qué funciones tuyas encajan?",
+    opts: ["ft_strchr", "ft_strlen", "ft_substr", "ft_strnstr", "ft_itoa"],
+    ans: [0, 1, 2],
+    why: "Con `ft_strchr(set, s1[i])` decides si un carácter se recorta; con `ft_strlen` colocas el índice del final; y cuando conoces `start` y `end`, `ft_substr(s1, start, end - start)` construye el resultado. Tres funciones tuyas y ninguna lógica de copia nueva.",
+    rel: ["strchr", "strlen", "substr"],
+    hint: "Una pregunta de pertenencia, una de longitud y una de extraer."
+  },
+  {
+    id: "s4q9", s: 4, st: 4, fn: "split", type: "choice",
+    q: "¿Cuántos punteros tiene el array que devuelve `ft_split(\"  hola  mundo \", ' ')`?",
+    opts: [
+      "3: dos palabras y un NULL final",
+      "2: sólo las dos palabras",
+      "5: uno por cada separador",
+      "4: dos palabras y dos cadenas vacías"
+    ],
+    ans: 0,
+    why: "Los separadores repetidos no generan cadenas vacías. Las palabras son \"hola\" y \"mundo\", y el array acaba en NULL para que quien lo use sepa dónde termina: 2 + 1 = 3 punteros.",
+    rel: ["substr"],
+    hint: "El array de strings también necesita un terminador."
+  },
+  {
+    id: "s4q10", s: 4, st: 4, fn: "split", type: "choice",
+    q: "En `ft_split`, `malloc` falla al reservar la tercera palabra. ¿Qué haces?",
+    opts: [
+      "Liberar las dos palabras anteriores y el array, y devolver NULL",
+      "Devolver el array con las dos palabras que ya tienes",
+      "Saltar esa palabra y seguir con la siguiente",
+      "Llamar a `exit(1)`"
+    ],
+    ans: 0,
+    why: "Si devuelves un resultado incompleto, quien llama no se entera del fallo; si sólo devuelves NULL, pierdes memoria. Recorres lo ya reservado con `free`, liberas el array y sólo entonces devuelves NULL. Suele ser una función auxiliar aparte.",
+    rel: ["substr"],
+    hint: "Hay tres cosas que dejar limpias antes de salir."
+  },
+  {
+    id: "s4q11", s: 4, st: 4, fn: "itoa", type: "fill",
+    q: "`ft_itoa(-2147483648)` falla porque `-n` desborda un `int`. ¿A qué tipo guardas `n` antes de cambiarle el signo?",
+    code: `char    *ft_itoa(int n)
+{
+    ____    nb;
+
+    nb = n;
+    if (nb < 0)
+        nb = -nb;
+    /* ... contar dígitos, malloc, rellenar ... */
+}`,
+    accept: ["long", "long long", "int64_t"],
+    why: "`INT_MIN` vale -2147483648 pero `INT_MAX` sólo 2147483647, así que `-n` no cabe en un `int`. Guardar `n` en un `long` (64 bits en las máquinas de 42) evita tener que tratar ese caso aparte. También vale `long long`.",
+    rel: ["putnbr_fd"],
+    hint: "Un entero con más bits que `int`."
+  }
+);
+
+/* ---------- SECTOR 5 · FD ---------- */
+Q.push(
+  {
+    id: "s5q1", s: 5, st: 1, fn: "putchar_fd", type: "fill",
+    q: "Completa la llamada: ¿cuántos bytes escribe esta función?",
+    code: `void    ft_putchar_fd(char c, int fd)
+{
+    write(fd, &c, ____);
+}`,
+    accept: ["1"],
+    why: "Escribes un byte desde la dirección de `c`. Esta es la pieza base: `write` es lo único de libc que necesitarás en todo el sector.",
+    rel: ["putstr_fd", "putnbr_fd"],
+    hint: "Un `char` ocupa exactamente un byte."
+  },
+  {
+    id: "s5q2", s: 5, st: 1, fn: "putchar_fd", type: "choice",
+    q: "¿Qué descriptor pasas para que tu función escriba en la salida de errores?",
+    opts: ["2", "0", "1", "3"],
+    ans: 0,
+    why: "0 es la entrada estándar, 1 la salida estándar y 2 la salida de errores. Tus funciones no deciden el destino: lo decide quien las llama a través de `fd`.",
+    rel: [],
+    hint: "Son los tres primeros descriptores de cualquier proceso."
+  },
+  {
+    id: "s5q3", s: 5, st: 1, fn: "putstr_fd", type: "fill",
+    q: "Completa el tercer argumento de `write`: ¿qué función tuya da la longitud?",
+    code: `void    ft_putstr_fd(char *s, int fd)
+{
+    if (!s)
+        return ;
+    write(fd, s, ____(s));
+}`,
+    accept: ["ft_strlen"],
+    why: "Un solo `write` con la longitud completa es más eficiente que uno por carácter. La comprobación `!s` evita desreferenciar NULL, cosa que aquí sí conviene proteger porque no es una función de libc.",
+    rel: ["strlen"],
+    hint: "Una función del primer sector."
+  },
+  {
+    id: "s5q4", s: 5, st: 2, fn: "putendl_fd", type: "choice",
+    q: "`ft_putendl_fd(s, fd)` escribe `s` y un salto de línea. ¿Cómo la construyes con lo que ya tienes?",
+    opts: [
+      "`ft_putstr_fd(s, fd);` y después `ft_putchar_fd('\\n', fd);`",
+      "`ft_putnbr_fd(s, fd);` dos veces",
+      "`ft_itoa(s)` y luego `ft_putstr_fd` del resultado",
+      "`write(fd, s, 1);`"
+    ],
+    ans: 0,
+    why: "Reutilizas las dos funciones anteriores y no vuelves a tocar `write`. Cuanto menos código nuevo, menos sitios donde equivocarte.",
+    rel: ["putstr_fd", "putchar_fd"],
+    hint: "Una función para la cadena y otra para el carácter final."
+  },
+  {
+    id: "s5q5", s: 5, st: 3, fn: "putnbr_fd", type: "choice",
+    q: "Quieres que `ft_putnbr_fd` no use `malloc`. ¿Qué función tuya te basta?",
+    opts: [
+      "`ft_putchar_fd`, llamándola dígito a dígito",
+      "`ft_itoa`, porque ya convierte el número",
+      "`ft_strdup`",
+      "`ft_calloc`"
+    ],
+    ans: 0,
+    why: "Con `ft_itoa` tendrías que reservar, imprimir y liberar. Con recursión y `ft_putchar_fd` imprimes cada dígito sin reservar nada: primero `ft_putnbr_fd(n / 10)` y después `ft_putchar_fd(n % 10 + '0')`.",
+    rel: ["putchar_fd", "itoa"],
+    hint: "Un dígito cada vez."
+  },
+  {
+    id: "s5q6", s: 5, st: 3, fn: "putnbr_fd", type: "choice",
+    q: "¿Qué problema da `ft_putnbr_fd(-2147483648, fd)` si haces `n = -n` con un `int`?",
+    opts: [
+      "`-n` no cabe en un `int`: desbordamiento",
+      "Imprime un cero de más",
+      "No pasa nada, `-n` vale 2147483648",
+      "`write` rechaza los números negativos"
+    ],
+    ans: 0,
+    why: "El mayor `int` es 2147483647, así que 2147483648 no cabe. Se resuelve con un caso especial para el mínimo o guardando `n` en un `long`: es el mismo problema que en `ft_itoa`.",
+    rel: ["itoa"],
+    hint: "Compara el valor absoluto del mínimo con el del máximo."
+  },
+  {
+    id: "s5q7", s: 5, st: 3, fn: "putnbr_fd", type: "bug",
+    q: "Esta versión imprime 123 como 321. ¿Qué línea tiene el orden equivocado?",
+    lines: L(`void    ft_putnbr_fd(int n, int fd)
+{
+    long    nb;
+
+    nb = n;
+    if (nb < 0)
+    {
+        ft_putchar_fd('-', fd);
+        nb = -nb;
+    }
+    ft_putchar_fd(nb % 10 + '0', fd);
+    if (nb >= 10)
+        ft_putnbr_fd(nb / 10, fd);
+}`),
+    ans: [10, 11, 12],
+    why: "El dígito de las unidades se imprime antes que los demás, y por eso sale invertido. La llamada recursiva con `nb / 10` debe ir primero y `ft_putchar_fd(nb % 10 + '0')` después: imprimir al volver de la recursión es lo que ordena los dígitos.",
+    rel: ["putchar_fd"],
+    hint: "¿Qué dígito imprime primero esta versión?"
+  }
+);
+
+/* ---------- SECTOR 6 · LISTAS ---------- */
+Q.push(
+  {
+    id: "s6q1", s: 6, st: 1, fn: "lstnew", type: "fill",
+    q: "Completa el último campo del nodo nuevo.",
+    code: `typedef struct s_list
+{
+    void            *content;
+    struct s_list   *next;
+}   t_list;
+
+t_list  *ft_lstnew(void *content)
+{
+    t_list  *node;
+
+    node = malloc(sizeof(t_list));
+    if (!node)
+        return (NULL);
+    node->content = content;
+    node->next = ____;
+    return (node);
+}`,
+    accept: ["NULL"],
+    why: "Un nodo recién creado no apunta a nadie: `next` debe ser NULL. Si lo dejas sin asignar, contiene basura y cualquier recorrido de la lista acabaría en un puntero inválido.",
+    rel: ["lstadd_front"],
+    hint: "La marca de final de lista."
+  },
+  {
+    id: "s6q2", s: 6, st: 2, fn: "lstadd_front", type: "choice",
+    q: "En `ft_lstadd_front(&lst, new)`, ¿qué orden es el correcto?",
+    opts: [
+      "`new->next = *lst;` y después `*lst = new;`",
+      "`*lst = new;` y después `new->next = *lst;`",
+      "Sólo `*lst = new;`",
+      "`new->next = NULL;` y después `*lst = new;`"
+    ],
+    ans: 0,
+    why: "Primero enganchas el nodo nuevo a la cabeza antigua; después mueves la cabeza. Si inviertes el orden, `new->next` acaba apuntando a sí mismo y pierdes el resto de la lista.",
+    rel: ["lstnew"],
+    hint: "No muevas la cabeza hasta haber guardado dónde estaba."
+  },
+  {
+    id: "s6q3", s: 6, st: 2, fn: "lstsize", type: "bug",
+    q: "`ft_lstsize` devuelve siempre un elemento de más. ¿Qué línea tiene el fallo?",
+    lines: L(`int ft_lstsize(t_list *lst)
+{
+    int n;
+
+    n = 1;
+    while (lst)
+    {
+        n++;
+        lst = lst->next;
+    }
+    return (n);
+}`),
+    ans: [4],
+    why: "El contador debe empezar en 0, porque dentro del bucle ya cuentas cada nodo. Con una lista vacía, devolver 1 sería incorrecto.",
+    rel: [],
+    hint: "¿Cuánto debería devolver para una lista vacía?"
+  },
+  {
+    id: "s6q4", s: 6, st: 2, fn: "lstadd_back", type: "choice",
+    q: "`ft_lstadd_back` necesita llegar al último nodo. ¿Qué función tuya reutilizas?",
+    opts: ["ft_lstlast", "ft_lstsize", "ft_lstiter", "ft_lstclear"],
+    ans: 0,
+    why: "`ft_lstlast(*lst)` te da el último nodo y sólo queda hacer `last->next = new`. Si ya tienes la función que recorre hasta el final, no repites el bucle.",
+    rel: ["lstlast"],
+    hint: "Su nombre dice exactamente lo que necesitas."
+  },
+  {
+    id: "s6q5", s: 6, st: 3, fn: "lstadd_back", type: "choice",
+    q: "En `ft_lstadd_back(&lst, new)` con `*lst == NULL`, `ft_lstlast` devuelve NULL. ¿Qué haces?",
+    opts: [
+      "Compruebas `!*lst` y asignas `*lst = new`",
+      "Haces `last->next = new` igualmente",
+      "Devuelves sin hacer nada",
+      "Llamas a `ft_lstnew(NULL)` primero"
+    ],
+    ans: 0,
+    why: "En una lista vacía no hay último nodo al que enganchar nada: el nodo nuevo pasa a ser la cabeza. Hacer `last->next` con `last == NULL` provoca un segfault.",
+    rel: ["lstlast", "lstadd_front"],
+    hint: "Una lista vacía y una lista de un nodo se comportan distinto."
+  },
+  {
+    id: "s6q6", s: 6, st: 3, fn: "lstclear", type: "choice",
+    q: "`ft_lstclear(&lst, del)` vacía toda la lista. ¿Qué función tuya hace el trabajo por cada nodo?",
+    opts: ["ft_lstdelone", "ft_lstiter", "ft_lstsize", "ft_lstlast"],
+    ans: 0,
+    why: "Recorres la lista llamando a `ft_lstdelone(nodo, del)` con cada nodo y, al terminar, pones `*lst = NULL`. `ft_lstdelone` aplica `del` al contenido y libera el nodo.",
+    rel: ["lstdelone"],
+    hint: "Borrar toda la lista es borrar un nodo, muchas veces."
+  },
+  {
+    id: "s6q7", s: 6, st: 3, fn: "lstclear", type: "choice",
+    q: "Dentro del bucle de `ft_lstclear`, ¿qué debes hacer antes de llamar a `ft_lstdelone`?",
+    opts: [
+      "Guardar `next` en una variable temporal",
+      "Poner `*lst = NULL`",
+      "Llamar a `ft_lstsize`",
+      "Nada, `ft_lstdelone` ya guarda el siguiente"
+    ],
+    ans: 0,
+    why: "Tras `ft_lstdelone` el nodo está liberado: leer `nodo->next` después sería usar memoria liberada. Guardas el siguiente antes, liberas el nodo y avanzas con la copia.",
+    rel: ["lstdelone"],
+    hint: "Después de `free`, el nodo ya no es tuyo."
+  },
+  {
+    id: "s6q8", s: 6, st: 4, fn: "lstmap", type: "multi",
+    q: "`ft_lstmap(lst, f, del)` crea una lista nueva aplicando `f` a cada contenido. ¿Qué funciones tuyas combinas?",
+    opts: ["ft_lstnew", "ft_lstadd_back", "ft_lstclear", "ft_lstsize", "ft_lstiter"],
+    ans: [0, 1, 2],
+    why: "`ft_lstnew(f(content))` crea cada nodo, `ft_lstadd_back` lo añade a la lista nueva y `ft_lstclear` limpia todo si algo falla. `ft_lstiter` modificaría la lista original y `ft_lstmap` no debe tocarla.",
+    rel: ["lstnew", "lstadd_back", "lstclear"],
+    hint: "Crear, añadir y, si falla, deshacer."
+  },
+  {
+    id: "s6q9", s: 6, st: 4, fn: "lstmap", type: "choice",
+    q: "En `ft_lstmap`, `f` ya devolvió el contenido nuevo pero `ft_lstnew` falla al crear el nodo. ¿Qué haces?",
+    opts: [
+      "Aplicas `del` a ese contenido, limpias la lista nueva con `ft_lstclear` y devuelves NULL",
+      "Sólo devuelves NULL",
+      "Haces `free` del nodo original",
+      "Continúas con el siguiente nodo"
+    ],
+    ans: 0,
+    why: "Hay dos cosas que liberar: el contenido que `f` ya creó (que todavía no pertenece a ningún nodo) y los nodos que sí habías construido. Olvidar lo primero es la fuga más típica de `ft_lstmap`.",
+    rel: ["lstclear", "lstdelone"],
+    hint: "Ese contenido nuevo no tiene dueño todavía."
+  },
+  {
+    id: "s6q10", s: 6, st: 4, fn: "lstmap", type: "choice",
+    q: "Usar `ft_lstadd_back` en cada vuelta de `ft_lstmap` es correcto, pero recorre la lista nueva cada vez. ¿Cómo lo evitas?",
+    opts: [
+      "Guardando un puntero al último nodo creado y enganchando directamente",
+      "Usando `ft_lstadd_front`, que conserva el orden de la lista original",
+      "Llamando a `ft_lstsize` antes de cada inserción",
+      "No se puede evitar: forma parte del enunciado"
+    ],
+    ans: 0,
+    why: "Con `ft_lstadd_back` el coste total es O(n²), porque cada inserción recorre todo lo construido. Mantener un puntero a la cola lo deja en O(n). `ft_lstadd_front` invertiría el orden, y `ft_lstmap` debe conservarlo.",
+    rel: ["lstadd_back", "lstnew"],
+    hint: "Si ya sabes dónde está el último nodo, no hace falta buscarlo."
+  }
+);
+/* ===== Motor del juego ===== */
+(function () {
+  "use strict";
+  const MAXLIVES = 3;
+  const LS = "libft-quest-progress-v1";
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const fmt = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  /* ---- resaltado de C ---- */
+  const KW = new Set(["return", "if", "while", "else", "for", "sizeof", "typedef", "struct"]);
+  const TY = new Set(["void", "char", "int", "long", "size_t", "unsigned", "const", "t_list", "short", "double"]);
+  function hl(src) {
+    const re = /(\/\*[\s\S]*?\*\/)|(_{3,})|("(?:\\.|[^"\\])*")|('(?:\\.|[^'\\])*')|\b(\d+)\b|\b([A-Za-z_]\w*)\b/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += '<span class="c">' + esc(m[1]) + "</span>";
+      else if (m[2]) out += '<span class="b">' + esc(m[2]) + "</span>";
+      else if (m[3] || m[4]) out += '<span class="s">' + esc(m[0]) + "</span>";
+      else if (m[5]) out += '<span class="n">' + m[5] + "</span>";
+      else {
+        const w = m[6];
+        out += KW.has(w) ? '<span class="k">' + w + "</span>" : TY.has(w) ? '<span class="t">' + w + "</span>" : esc(w);
+      }
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+
+  /* ---- estado ---- */
+  const S = {
+    solved: {}, view: "start", sector: 1, queue: [], qi: 0, done: 0, total: 0, lives: MAXLIVES, review: false,
+    sel: null, msel: new Set(), fill: "", checked: false, ok: null, hint: false, selFn: null, armed: false
+  };
+  const byId = {};
+  Q.forEach((q) => { byId[q.id] = q; });
+  const secQ = (n) => Q.filter((q) => q.s === n);
+  const solvedCount = (n) => secQ(n).filter((q) => S.solved[q.id]).length;
+  const cleared = (n) => solvedCount(n) === secQ(n).length;
+  const unlocked = (n) => n === 1 || cleared(n - 1);
+  const maxXP = Q.reduce((a, q) => a + q.st * 10, 0);
+  const xp = () => Q.reduce((a, q) => a + (S.solved[q.id] ? q.st * 10 : 0), 0);
+  const mastered = (fn) => Q.filter((q) => q.fn === fn).every((q) => S.solved[q.id]);
+  const label = (n) => (LIBC.indexOf(n) >= 0 ? n : "ft_" + n);
+  const stars = (n) => "★".repeat(n) + "☆".repeat(4 - n);
+  const RANKS = [[0, "PISCINERO"], [0.2, "TOPO"], [0.45, "BECARIO"], [0.75, "NORMINETTE"], [1, "LIBFT MASTER"]];
+  function rank() {
+    const f = xp() / maxXP;
+    let r = RANKS[0][1];
+    RANKS.forEach((x) => { if (f >= x[0]) r = x[1]; });
+    return r;
+  }
+  const cur = () => S.queue[S.qi];
+  const firstOpen = () => {
+    for (let i = 1; i <= SECTORS.length; i++) if (!cleared(i)) return i;
+    return 1;
+  };
+
+  /* ---- guardado ---- */
+  let docRef = null;
+  let chain = Promise.resolve();
+  function mergeSolved(obj) {
+    let changed = false;
+    if (obj && typeof obj === "object") {
+      Object.keys(obj).forEach((id) => { if (byId[id] && obj[id] && !S.solved[id]) { S.solved[id] = true; changed = true; } });
+    }
+    return changed;
+  }
+  function loadLocal() {
+    try {
+      const r = localStorage.getItem(LS);
+      if (r) mergeSolved((JSON.parse(r) || {}).solved);
+    } catch (e) { /* sin almacenamiento */ }
+  }
+  function setFoot(mode) {
+    $("foot").textContent = mode === "cloud"
+      ? "Tu progreso se guarda en tu cuenta y se conserva entre sesiones."
+      : "Tu progreso se guarda sólo en este navegador.";
+  }
+  function save() {
+    const payload = { v: 1, solved: Object.assign({}, S.solved), t: Date.now() };
+    try { localStorage.setItem(LS, JSON.stringify(payload)); } catch (e) { /* sin almacenamiento */ }
+    if (docRef) {
+      const ref = docRef;
+      chain = chain.then(() => ref.set(payload)).then(() => setFoot("cloud")).catch(() => { docRef = null; setFoot("local"); });
+    }
+  }
+  async function initStore() {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      const res = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+      const db = res[0], user = res[1];
+      if (!db || !user) return;
+      const id = await user.id();
+      if (!id) return;
+      const cw = typeof user.can === "function" ? await user.can("data.write") : null;
+      if (cw === false) { setFoot("local"); return; }
+      docRef =db.doc("data/users/" + id + "/progress");
+      const snap = await docRef.get();
+      const before = Object.keys(S.solved).length;
+      if (snap.exists) mergeSolved((snap.data() || {}).solved);
+      if (Object.keys(S.solved).length !== before || !snap.exists) save();
+      if (cw === true) setFoot("cloud");
+      renderChrome();
+      if (S.view === "start") renderScreen();
+    } catch (e) { /* se queda el guardado local */ }
+  }
+
+  /* ---- piezas de interfaz ---- */
+  function renderStats() {
+    const inRun = S.view === "q" || S.view === "segfault";
+    $("st-lives").textContent = S.review && S.view === "q" ? "∞" : "♥".repeat(inRun ? Math.max(S.lives, 0) : MAXLIVES) + "♡".repeat(inRun ? MAXLIVES - Math.max(S.lives, 0) : 0);
+    $("st-xp").textContent = xp() + "/" + maxXP;
+    $("st-rank").textContent = rank();
+  }
+  function renderMap() {
+    $("map").innerHTML = SECTORS.map((s) => {
+      const t = secQ(s.n).length, d = solvedCount(s.n), lock = !unlocked(s.n), done = cleared(s.n);
+      const cur_ = S.sector === s.n && S.view !== "start" && S.view !== "final";
+      return '<button class="sector' + (done ? " done" : "") + '" data-n="' + s.n + '"' + (lock ? " disabled" : "") + (cur_ ? ' aria-current="true"' : "") +
+        ' title="' + esc(lock ? "Completa el sector anterior para abrirlo" : s.blurb) + '">' +
+        '<span class="hex">' + s.hex + (lock ? " ✕" : done ? " ✔" : "") + "</span>" +
+        '<span class="nm">' + s.name + "</span>" +
+        '<span class="pg">' + d + "/" + t + "</span>" +
+        '<span class="bar"><i style="width:' + (t ? (d / t) * 100 : 0) + '%"></i></span></button>';
+    }).join("");
+    $("map").querySelectorAll("button[data-n]").forEach((b) => b.addEventListener("click", () => openSector(+b.dataset.n)));
+  }
+  function renderInv() {
+    let tot = 0, got = 0;
+    $("inv-groups").innerHTML = SECTORS.map((s) => {
+      const fns = Array.from(new Set(secQ(s.n).map((q) => q.fn)));
+      const chips = fns.map((fn) => {
+        const m = mastered(fn);
+        tot++; if (m) got++;
+        return '<button class="fn' + (m ? " got" : "") + (S.selFn === fn ? " sel" : "") + '" data-fn="' + fn + '">' + label(fn) + "</button>";
+      }).join("");
+      return '<div class="inv-group"><h3>' + s.hex + " " + s.name + '</h3><div class="chips">' + chips + "</div></div>";
+    }).join("");
+    $("inv-count").textContent = got + "/" + tot;
+    $("inv-groups").querySelectorAll("button[data-fn]").forEach((b) => b.addEventListener("click", () => {
+      S.selFn = S.selFn === b.dataset.fn ? null : b.dataset.fn;
+      renderInv();
+    }));
+    const fn = S.selFn, box = $("depinfo");
+    if (!fn) { box.textContent = "Pulsa una función para ver de cuáles depende y quién la usa."; return; }
+    const d = DEPS[fn] || [];
+    const used = Object.keys(DEPS).filter((k) => DEPS[k].indexOf(fn) >= 0);
+    let h = "<b>" + label(fn) + "</b> " + (d.length ? "usa: " + d.map(label).join(", ") + "." : "no necesita otras funciones tuyas.");
+    if (used.length) h += "<br>La usan: " + used.map(label).join(", ") + ".";
+    box.innerHTML = h;
+  }
+  function renderChrome() { renderStats(); renderMap(); renderInv(); }
+  function keepTermVisible() {
+    const r = $("term").getBoundingClientRect();
+    if (r.top < 0) window.scrollTo(0, window.scrollY + r.top - 70);
+  }
+  function render() { renderChrome(); renderScreen(); keepTermVisible(); }
+
+  /* ---- navegación ---- */
+  function resetQ() { S.sel = null; S.msel = new Set(); S.fill = ""; S.checked = false; S.ok = null; S.hint = false; }
+  function openSector(n) { if (!unlocked(n)) return; S.sector = n; S.view = "sector"; S.armed = false; render(); }
+  function startRun(n, review) {
+    S.sector = n; S.review = !!review;
+    S.queue = secQ(n).filter((q) => S.review || !S.solved[q.id]);
+    if (!S.queue.length) { S.review = true; S.queue = secQ(n).slice(); }
+    S.qi = 0; S.done = 0; S.total = S.queue.length; S.lives = MAXLIVES;
+    resetQ(); S.view = "q"; render();
+  }
+  function next() {
+    if (S.lives <= 0 && !S.review) { S.view = "segfault"; render(); return; }
+    S.qi++;
+    if (S.qi >= S.queue.length) S.view = S.review ? "sector" : "clear";
+    else resetQ();
+    render();
+  }
+
+  /* ---- respuestas ---- */
+  const norm = (v) => String(v).replace(/\s+/g, "");
+  function canCheck() {
+    const q = cur();
+    if (!q || S.checked) return false;
+    if (q.type === "multi") return S.msel.size > 0;
+    if (q.type === "fill") return norm(S.fill).length > 0;
+    return S.sel !== null;
+  }
+  function select(i) {
+    const q = cur();
+    if (!q || S.checked) return;
+    if (q.type === "multi") { if (S.msel.has(i)) S.msel.delete(i); else S.msel.add(i); }
+    else if (q.type === "choice" || q.type === "bug") S.sel = i;
+    else return;
+    updateSel();
+  }
+  function updateSel() {
+    const q = cur();
+    document.querySelectorAll("#screen [data-i]").forEach((el) => {
+      const i = +el.dataset.i;
+      const on = q.type === "multi" ? S.msel.has(i) : S.sel === i;
+      el.classList.toggle("picked", on);
+      const k = el.querySelector(".key");
+      if (k && q.type === "multi") k.textContent = on ? "[x]" : "[ ]";
+    });
+    const b = $("check");
+    if (b) b.disabled = !canCheck();
+  }
+  function isRight(q) {
+    if (q.type === "choice") return S.sel === q.ans;
+    if (q.type === "bug") return q.ans.indexOf(S.sel) >= 0;
+    if (q.type === "fill") return q.accept.some((a) => norm(a) === norm(S.fill));
+    if (q.type === "multi") return S.msel.size === q.ans.length && q.ans.every((i) => S.msel.has(i));
+    return false;
+  }
+  function check() {
+    const q = cur();
+    if (!canCheck()) return;
+    S.checked = true;
+    S.ok = isRight(q);
+    if (!S.review) {
+      if (S.ok) { S.solved[q.id] = true; S.done++; save(); }
+      else { S.lives--; S.queue.push(q); }
+    }
+    renderStats();
+    markAnswer(q);
+    showResult(q);
+    renderMap(); renderInv();
+  }
+  function markAnswer(q) {
+    document.querySelectorAll("#screen [data-i]").forEach((el) => {
+      const i = +el.dataset.i;
+      el.disabled = true;
+      el.classList.remove("picked");
+      if (q.type === "choice") {
+        if (i === q.ans) el.classList.add("right");
+        else if (i === S.sel) el.classList.add("wrong");
+      } else if (q.type === "multi") {
+        const should = q.ans.indexOf(i) >= 0, did = S.msel.has(i);
+        if (should && did) el.classList.add("right");
+        else if (did) el.classList.add("wrong");
+        else if (should) el.classList.add("missed");
+      } else if (q.type === "bug") {
+        if (q.ans.indexOf(i) >= 0) el.classList.add("right");
+        else if (i === S.sel) el.classList.add("wrong");
+      }
+    });
+    const inp = $("fill");
+    if (inp) { inp.disabled = true; inp.classList.add(S.ok ? "right" : "wrong"); }
+    $("check").disabled = true;
+    const hb = $("hintb"); if (hb) hb.disabled = true;
+  }
+  function showResult(q) {
+    const gain = q.st * 10;
+    const deps = DEPS[q.fn];
+    let verdict = S.ok ? (S.review ? "OK" : "OK · +" + gain + " XP") : (S.review ? "NO ES ESA" : S.lives <= 0 ? "SEGMENTATION FAULT" : "ERROR · −1 VIDA");
+    let extra = "";
+    if (!S.ok && q.type === "fill") extra = '<p class="explain">Respuesta válida: <code>' + esc(q.accept[0]) + "</code></p>";
+    const rel = (q.rel || []).filter((r) => r !== q.fn);
+    let relHtml = "";
+    if (deps && deps.length) relHtml += '<div class="rel"><span>' + label(q.fn) + " usa:</span>" + deps.map((d) => '<span class="chip link">' + label(d) + "</span>").join("") + "</div>";
+    if (rel.length) relHtml += '<div class="rel"><span>Relacionadas:</span>' + rel.map((r) => '<span class="chip' + (mastered(r) ? " on" : "") + '">' + label(r) + "</span>").join("") + "</div>";
+    const more = S.qi + 1 < S.queue.length;
+    let nextLabel = more || (!S.ok && !S.review && S.lives > 0) ? "SIGUIENTE ▸" : "CONTINUAR ▸";
+    if (S.lives <= 0 && !S.review) nextLabel = "CONTINUAR ▸";
+    $("res").innerHTML = '<div class="result ' + (S.ok ? "ok" : "bad") + '"><div class="verdict">' + verdict + "</div>" + extra +
+      '<p class="explain">' + fmt(q.why) + "</p>" + relHtml +
+      '<div class="actions"><button class="btn" id="next">' + nextLabel + '</button><span class="kbd">Enter</span></div></div>';
+    $("next").addEventListener("click", next);
+    $("next").focus();
+    const r = $("res").getBoundingClientRect();
+    if (r.bottom > window.innerHeight) window.scrollTo(0, window.scrollY + r.bottom - window.innerHeight + 16);
+  }
+
+  /* ---- pantallas ---- */
+  const chipsFor = (n) => Array.from(new Set(secQ(n).map((q) => q.fn)))
+    .map((fn) => '<span class="chip' + (mastered(fn) ? " on" : "") + '">' + label(fn) + "</span>").join("");
+
+  function screenStart() {
+    $("th-left").textContent = "libft@42:~$ ./libft_quest";
+    $("th-right").textContent = "inicio";
+    const n = Object.keys(S.solved).length;
+    const all = Q.every((q) => S.solved[q.id]);
+    $("screen").innerHTML =
+      "<h1>LIBFT_QUEST</h1>" +
+      '<div class="boot">' +
+      '<span><span class="ok">[ OK ]</span> ' + SECTORS.length + " sectores cargados</span>" +
+      '<span><span class="ok">[ OK ]</span> ' + Q.length + " preguntas, de ★ a ★★★★</span>" +
+      '<span><span class="ok">[ OK ]</span> ' + Object.keys(DEPS).length + " relaciones entre funciones mapeadas</span>" +
+      '<span><span class="ok">[ OK ]</span> progreso: ' + n + " de " + Q.length + " resueltas</span></div>" +
+      '<p class="qtext">Repasa tu libft con retos de dificultad creciente: elegir la respuesta, completar código, encontrar el error y decidir qué funciones reutilizar para construir otras.</p>' +
+      '<p class="qtext">Cada intento de sector te da 3 vidas. Un fallo cuesta una vida y esa pregunta vuelve más tarde. Completa un sector para abrir el siguiente; los superados se pueden repasar sin límite.</p>' +
+      '<div class="actions"><button class="btn" id="go">' + (all ? "VER RESULTADO" : n ? "CONTINUAR" : "INICIAR") + "</button>" +
+      '<button class="btn ghost" id="reset">' + (S.armed ? "¿SEGURO? PULSA DE NUEVO" : "Borrar progreso") + "</button></div>";
+    $("go").addEventListener("click", () => { if (all) { S.view = "final"; render(); } else openSector(firstOpen()); });
+    $("reset").addEventListener("click", () => {
+      if (!S.armed) {
+        S.armed = true; renderScreen();
+        setTimeout(() => { if (S.armed && S.view === "start") { S.armed = false; renderScreen(); } }, 4000);
+      } else {
+        S.armed = false; S.solved = {}; save(); S.sector = 1; render();
+      }
+    });
+  }
+
+  function screenSector() {
+    const n = S.sector, sec = SECTORS[n - 1], t = secQ(n).length, d = solvedCount(n), done = cleared(n);
+    const sts = secQ(n).map((q) => q.st), lo = Math.min.apply(null, sts), hi = Math.max.apply(null, sts);
+    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$";
+    $("th-right").textContent = d + "/" + t + " resueltas";
+    $("screen").innerHTML =
+      '<div class="tag">SECTOR ' + sec.hex + "</div><h2>" + sec.name + "</h2>" +
+      '<p class="qtext">' + esc(sec.blurb) + "</p>" +
+      '<div class="rel"><span>Funciones del sector:</span>' + chipsFor(n) + "</div>" +
+      '<p class="status-line">' + t + " preguntas · dificultad " + stars(lo) + " a " + stars(hi) + " · " + (done ? "completado" : (t - d) + " por resolver") + "</p>" +
+      '<div class="actions">' +
+      (done
+        ? '<button class="btn" id="rev">REPASAR SECTOR</button><button class="btn ghost" id="nxt">' + (n < SECTORS.length ? "SIGUIENTE SECTOR" : "VER RESULTADO") + "</button>"
+        : '<button class="btn" id="enter">ENTRAR AL SECTOR</button>') +
+      "</div>";
+    if (done) {
+      $("rev").addEventListener("click", () => startRun(n, true));
+      $("nxt").addEventListener("click", () => { if (n < SECTORS.length) openSector(n + 1); else { S.view = "final"; render(); } });
+    } else $("enter").addEventListener("click", () => startRun(n, false));
+  }
+
+  const TYPE_LABEL = {
+    choice: "elige una respuesta", multi: "marca todas las correctas",
+    fill: "completa el código", bug: "encuentra la línea con el error"
+  };
+
+  function screenQ() {
+    const q = cur(), sec = SECTORS[S.sector - 1];
+    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$ ./quest" + (S.review ? " --repaso" : "");
+    $("th-right").textContent = Math.min(S.done + 1, S.total) + "/" + S.total + " · " + stars(q.st);
+    let body = "";
+    if (q.type === "bug") {
+      body = '<div class="lines" role="group" aria-label="Líneas de código">' +
+        q.lines.map((l, i) => '<button class="line" data-i="' + i + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(l) || " ") + "</span></button>").join("") + "</div>";
+    } else {
+      if (q.code) body += '<pre class="code">' + hl(q.code) + "</pre>";
+      if (q.type === "fill") {
+        body += '<div class="fillrow"><label for="fill">Tu respuesta:</label><input id="fill" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40"></div>';
+      } else {
+        body += '<div class="opts">' + q.opts.map((o, i) =>
+          '<button class="opt" data-i="' + i + '"><span class="key">' + (q.type === "multi" ? "[ ]" : i + 1) + "</span><span>" + fmt(o) + "</span></button>").join("") + "</div>";
+      }
+    }
+    $("screen").innerHTML =
+      '<div class="tag">' + label(q.fn) + " · " + TYPE_LABEL[q.type] + "</div>" +
+      '<p class="qtext">' + fmt(q.q) + "</p>" + body +
+      '<div class="actions"><button class="btn" id="check" disabled>COMPROBAR</button><button class="btn ghost" id="hintb">PISTA [P]</button><span class="kbd">Enter para comprobar</span></div>' +
+      '<div id="hint"></div><div id="res"></div>';
+    $("screen").querySelectorAll("[data-i]").forEach((el) => el.addEventListener("click", () => select(+el.dataset.i)));
+    $("check").addEventListener("click", check);
+    $("hintb").addEventListener("click", () => {
+      S.hint = !S.hint;
+      $("hint").innerHTML = S.hint ? '<p class="hint">' + fmt(q.hint) + "</p>" : "";
+    });
+    const inp = $("fill");
+    if (inp) {
+      inp.addEventListener("input", () => { S.fill = inp.value; $("check").disabled = !canCheck(); });
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); check(); } });
+      if (window.matchMedia && !window.matchMedia("(max-width: 700px)").matches) inp.focus();
+    }
+  }
+
+  function screenClear() {
+    const n = S.sector, sec = SECTORS[n - 1], last = n === SECTORS.length;
+    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$";
+    $("th-right").textContent = "completado";
+    $("screen").innerHTML =
+      '<div class="tag">SECTOR ' + sec.hex + "</div><h2>SECTOR COMPLETADO</h2>" +
+      '<div class="boot"><span><span class="ok">[ OK ]</span> ' + sec.name + ": " + secQ(n).length + " de " + secQ(n).length + " preguntas resueltas</span>" +
+      '<span><span class="ok">[ OK ]</span> XP total: ' + xp() + " de " + maxXP + " · rango " + rank() + "</span></div>" +
+      '<div class="rel"><span>Funciones dominadas:</span>' + chipsFor(n) + "</div>" +
+      '<div class="actions"><button class="btn" id="nxt">' + (last ? "VER RESULTADO ▸" : "SIGUIENTE SECTOR ▸") + '</button><button class="btn ghost" id="rev">Repasar este sector</button></div>';
+    $("nxt").addEventListener("click", () => { if (last) { S.view = "final"; render(); } else openSector(n + 1); });
+    $("rev").addEventListener("click", () => startRun(n, true));
+  }
+
+  function screenSegfault() {
+    const n = S.sector, sec = SECTORS[n - 1];
+    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$";
+    $("th-right").textContent = "core dumped";
+    $("screen").innerHTML =
+      '<h1 style="color:var(--bad)">SEGMENTATION FAULT</h1>' +
+      '<p class="qtext">(core dumped) Te has quedado sin vidas. Llevas ' + solvedCount(n) + " de " + secQ(n).length + " preguntas resueltas en este sector y eso se conserva.</p>" +
+      '<p class="qtext">Las que fallaste siguen pendientes. Lee otra vez las explicaciones y vuelve a entrar.</p>' +
+      '<div class="actions"><button class="btn" id="retry">REINTENTAR SECTOR</button><button class="btn ghost" id="back">Volver al sector</button></div>';
+    $("retry").addEventListener("click", () => startRun(n, false));
+    $("back").addEventListener("click", () => openSector(n));
+  }
+
+  function screenFinal() {
+    $("th-left").textContent = "libft@42:~$ ./libft_quest --resultado";
+    $("th-right").textContent = "fin";
+    $("screen").innerHTML =
+      '<div class="tag">RESULTADO</div>' +
+      '<div class="final-score">' + xp() + "/" + maxXP + " XP</div>" +
+      "<h2>RANGO: " + rank() + "</h2>" +
+      '<p class="qtext">' + (Q.every((q) => S.solved[q.id])
+        ? "Has superado todos los sectores. Repasa los que más te cuesten hasta que la relación entre funciones te salga sola."
+        : "Aún te quedan preguntas por resolver. Vuelve a los sectores abiertos para completarlos.") + "</p>" +
+      '<div class="actions"><button class="btn" id="home">VOLVER AL INICIO</button></div>';
+    $("home").addEventListener("click", () => { S.view = "start"; render(); });
+  }
+
+  function renderScreen() {
+    if (S.view === "start") screenStart();
+    else if (S.view === "sector") screenSector();
+    else if (S.view === "q") screenQ();
+    else if (S.view === "clear") screenClear();
+    else if (S.view === "segfault") screenSegfault();
+    else screenFinal();
+  }
+
+  /* ---- teclado ---- */
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || S.view !== "q") return;
+    const tag = e.target && e.target.tagName;
+    if (tag === "INPUT") return;
+    const q = cur();
+    if (e.key === "Enter") {
+      if (tag === "BUTTON") return;
+      e.preventDefault();
+      if (!S.checked) check(); else next();
+    } else if (/^[1-9]$/.test(e.key) && (q.type === "choice" || q.type === "multi")) {
+      if (+e.key <= q.opts.length) select(+e.key - 1);
+    } else if (e.key === "p" || e.key === "P") {
+      const hb = $("hintb");
+      if (hb && !hb.disabled) hb.click();
+    }
+  });
+
+  /* ---- arranque ---- */
+  loadLocal();
+  render();
+  initStore();
+})();
+</script>
+</body>
+</html>
