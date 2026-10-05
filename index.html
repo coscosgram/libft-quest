@@ -164,6 +164,13 @@ pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px s
 .fillrow input.wrong { border-color: var(--bad); color: var(--bad); }
 
 /* botones */
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 4px 0 14px; }
+.mode { border: 1px solid var(--line); background: var(--bg); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.mode h3 { margin: 0; font-size: 22px; line-height: 1.1; color: var(--fg); }
+.mode p { margin: 0; font-size: 13px; line-height: 1.5; }
+.mode .meta { color: var(--dim); }
+.mode .btn { align-self: flex-start; margin-top: auto; }
+@media (max-width: 700px) { .modes { grid-template-columns: 1fr; } }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .btn {
   background: transparent; border: 1px solid var(--fg); padding: 7px 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: 12px;
@@ -235,6 +242,7 @@ pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px s
       <span class="lives"><span data-i18n="lives">Vidas</span> <b id="st-lives">♥♥♥</b></span>
       <span>XP <b id="st-xp">0</b></span>
       <span><span data-i18n="rank">Rango</span> <b id="st-rank">PISCINERO</b></span>
+      <button class="mbtn" id="modes" type="button" data-i18n="modesBtn" hidden>⌂ MODOS</button>
       <button class="mbtn" id="lang" type="button" aria-label="Idioma / Language" title="Idioma / Language">ES / EN</button>
       <button class="mbtn" id="sfx" type="button" aria-pressed="true">◆ SONIDOS: SÍ</button>
       <button class="mbtn" id="music" type="button" aria-pressed="false">♪ MÚSICA: NO</button>
@@ -1207,6 +1215,9 @@ Q.push(
     hint: "Hay que parar en el último nodo, no pasarse de él. Y la lista vacía es un caso aparte."
   }
 );
+/* órdenes equivalentes aceptados (ver expandAlts en e0_i18n.js) */
+Object.assign(Q.find((q) => q.id === "s4q12"), { perm: [[[2, 2], [3, 3], [4, 4]], [[5, 5], [6, 6]]] });
+Object.assign(Q.find((q) => q.id === "s2q9"), { perm: [[[3, 4], [5, 6], [7, 7]]] });
 /* orden estable por sector y dificultad: las nuevas se colocan tras las existentes de su misma dificultad */
 Q.sort((a, b) => a.s - b.s || a.st - b.st);
 
@@ -1249,7 +1260,7 @@ const T = {
     bootQuestions: (n) => n + " preguntas, de ★ a ★★★★",
     bootRelations: (n) => n + " relaciones entre funciones mapeadas",
     bootProgress: (a, b) => "progreso: " + a + " de " + b + " resueltas",
-    intro1: "Repasa tu libft con retos de dificultad creciente: elegir la respuesta, completar código, encontrar el error, ordenar piezas y decidir qué funciones reutilizar para construir otras.",
+    intro1: "Repasa tu libft con retos de dificultad creciente y decide qué funciones reutilizar para construir otras.",
     intro2: "Cada intento de sector te da 3 vidas. Un fallo cuesta una vida y esa pregunta vuelve más tarde. Completa un sector para abrir el siguiente; los superados se pueden repasar sin límite.",
     btnResult: "VER RESULTADO", btnContinue: "CONTINUAR", btnStart: "INICIAR",
     sure: "¿SEGURO? PULSA DE NUEVO", resetProgress: "Borrar progreso",
@@ -1271,7 +1282,27 @@ const T = {
     finalAll: "Has superado todos los sectores. Repasa los que más te cuesten hasta que la relación entre funciones te salga sola.",
     finalSome: "Aún te quedan preguntas por resolver. Vuelve a los sectores abiertos para completarlos.",
     home: "VOLVER AL INICIO",
-    music: (on) => "♪ MÚSICA: " + (on ? "SÍ" : "NO"), sfx: (on) => "◆ SONIDOS: " + (on ? "SÍ" : "NO")
+    music: (on) => "♪ MÚSICA: " + (on ? "SÍ" : "NO"), sfx: (on) => "◆ SONIDOS: " + (on ? "SÍ" : "NO"),
+    survBtn: "MODO SURVIVAL",
+    questTitle: "MODO QUEST", survTitle: "MODO SURVIVAL", begin: "EMPEZAR", back: "VOLVER",
+    questDesc: "Seis sectores de dificultad creciente con preguntas de todo tipo. Tienes 3 vidas por intento, ganas XP y subes de rango.",
+    questMeta: (n, t) => "Progreso: " + n + " de " + t + " resueltas",
+    survDesc: "Las 43 funciones de la libft, de la más fácil a la más difícil, con una sola vida. ¿Hasta dónde llegas?",
+    survRules: [
+      "Son 43 funciones, de la más fácil a la más difícil.",
+      "Cada una se construye ordenando piezas de código. Hay líneas trampa: sobran algunas.",
+      "Sólo tienes una vida. Un fallo es GAME OVER y vuelves a empezar desde la primera función.",
+      "No hay XP ni cambia tu progreso en el modo quest. Sólo cuenta tu récord.",
+      "Puedes pedir pista, pero la música se acelera y se pone tensa según avanzas."
+    ],
+    chooseMode: "Elige modo de juego:",
+    survIntro: "Modo survival: construye una a una todas las funciones de la libft, de la más fácil a la más difícil. Un solo fallo y vuelves a empezar desde la primera.",
+    survBest: (n, t) => "Récord: " + n + " de " + t + " funciones.",
+    gameOver: "GAME OVER", survCmd: "libft@42:~$ ./survival", survTag: "SURVIVAL",
+    survOverMsg: (n, t, fn) => "Has caído en la función " + n + " de " + t + ": " + fn + ". Toca volver a empezar desde la primera.",
+    survRestart: "VOLVER A EMPEZAR", quit: "SALIR", modesBtn: "⌂ MODOS",
+    survWinTitle: "SURVIVAL SUPERADO",
+    survWinMsg: (t) => "Has construido las " + t + " funciones de la libft sin un solo fallo. Eso es ser LIBFT MASTER."
   },
   en: {
     lives: "Lives", rank: "Rank", inventory: "Inventory", credit: "Made by coscosgram · libft_quest.exe",
@@ -1291,7 +1322,7 @@ const T = {
     bootQuestions: (n) => n + " questions, from ★ to ★★★★",
     bootRelations: (n) => n + " function relationships mapped",
     bootProgress: (a, b) => "progress: " + a + " of " + b + " solved",
-    intro1: "Review your libft with challenges of growing difficulty: pick the answer, complete code, spot the bug, order code pieces and decide which functions to reuse to build others.",
+    intro1: "Review your libft with challenges of growing difficulty and decide which functions to reuse to build others.",
     intro2: "Each sector attempt gives you 3 lives. A mistake costs one life and that question comes back later. Clear a sector to unlock the next one; cleared ones can be reviewed without limits.",
     btnResult: "VIEW RESULT", btnContinue: "CONTINUE", btnStart: "START",
     sure: "SURE? PRESS AGAIN", resetProgress: "Reset progress",
@@ -1313,7 +1344,27 @@ const T = {
     finalAll: "You cleared every sector. Review the ones you find hardest until the relationships between functions come naturally.",
     finalSome: "You still have unsolved questions. Go back to the open sectors to finish them.",
     home: "BACK TO START",
-    music: (on) => "♪ MUSIC: " + (on ? "ON" : "OFF"), sfx: (on) => "◆ SOUNDS: " + (on ? "ON" : "OFF")
+    music: (on) => "♪ MUSIC: " + (on ? "ON" : "OFF"), sfx: (on) => "◆ SOUNDS: " + (on ? "ON" : "OFF"),
+    survBtn: "SURVIVAL MODE",
+    questTitle: "QUEST MODE", survTitle: "SURVIVAL MODE", begin: "BEGIN", back: "BACK",
+    questDesc: "Six sectors of growing difficulty with all kinds of questions. You get 3 lives per attempt, earn XP and rank up.",
+    questMeta: (n, t) => "Progress: " + n + " of " + t + " solved",
+    survDesc: "All 43 libft functions, from easiest to hardest, with a single life. How far can you get?",
+    survRules: [
+      "There are 43 functions, from easiest to hardest.",
+      "You build each one by ordering code pieces. There are trap lines: some are left over.",
+      "You only have one life. A mistake is GAME OVER and you start over from the first function.",
+      "There is no XP and your quest progress is not affected. Only your best run counts.",
+      "You can ask for a hint, but the music speeds up and gets tense as you advance."
+    ],
+    chooseMode: "Choose a game mode:",
+    survIntro: "Survival mode: build every libft function one by one, from easiest to hardest. A single mistake and you start over from the first one.",
+    survBest: (n, t) => "Best: " + n + " of " + t + " functions.",
+    gameOver: "GAME OVER", survCmd: "libft@42:~$ ./survival", survTag: "SURVIVAL",
+    survOverMsg: (n, t, fn) => "You fell at function " + n + " of " + t + ": " + fn + ". Time to start over from the first one.",
+    survRestart: "START OVER", quit: "EXIT", modesBtn: "⌂ MODES",
+    survWinTitle: "SURVIVAL CLEARED",
+    survWinMsg: (t) => "You built all " + t + " libft functions without a single mistake. That is what a LIBFT MASTER does."
   }
 };
 /* tr("clave", ...args): texto en el idioma activo (con respaldo en español) */
@@ -1324,6 +1375,43 @@ function tr(k) {
 /* versiones localizadas de una pregunta y de un sector */
 const LQ = (q) => (q && LANG === "en" && EN.q[q.id] ? Object.assign({}, q, EN.q[q.id]) : q);
 const LS_ = (s) => (LANG === "en" && EN.sectors[s.n - 1] ? Object.assign({}, s, EN.sectors[s.n - 1]) : s);
+
+/* ===== Modo survival: orden de las 43 funciones, de fácil a difícil ===== */
+const SURV = [];
+const SURV_ORDER = [
+  "isalpha", "isdigit", "isascii", "isalnum", "isprint", "toupper", "tolower", "strlen", "putchar_fd", "putstr_fd",
+  "putendl_fd", "memset", "bzero", "lstnew", "lstadd_front", "lstsize", "lstlast", "memcpy", "memchr", "memcmp",
+  "strchr", "strrchr", "strncmp", "strdup", "calloc", "striteri", "lstdelone", "lstiter", "putnbr_fd", "memmove",
+  "strlcpy", "strlcat", "atoi", "strnstr", "strmapi", "substr", "strjoin", "lstadd_back", "lstclear", "strtrim",
+  "itoa", "split", "lstmap"
+];
+const survList = () => SURV_ORDER.map((fn) => Q.find((q) => q.type === "build" && q.fn === fn) || SURV.find((q) => q.fn === fn)).filter(Boolean);
+
+/* órdenes válidos de una pregunta build: sol + permutaciones permitidas (perm) + alts explícitos */
+function expandAlts(q) {
+  if (q.type !== "build" || q.accept) return;
+  const perms = (n) => {
+    if (n <= 1) return [[0]];
+    const out = [];
+    perms(n - 1).forEach((p) => { for (let i = 0; i <= p.length; i++) out.push(p.slice(0, i).concat(n - 1, p.slice(i))); });
+    return out;
+  };
+  let outs = [q.sol.slice()];
+  (q.perm || []).forEach((group) => {
+    const blocks = group.map((b) => q.sol.slice(b[0], b[1] + 1));
+    const lo = Math.min.apply(null, group.map((b) => b[0])), hi = Math.max.apply(null, group.map((b) => b[1]));
+    const next = [];
+    outs.forEach((o) => perms(blocks.length).forEach((ord) => {
+      let mid = [];
+      ord.forEach((i) => { mid = mid.concat(blocks[i]); });
+      next.push(o.slice(0, lo).concat(mid, o.slice(hi + 1)));
+    }));
+    outs = next;
+  });
+  const seen = {}, all = [];
+  outs.concat(q.alts || []).forEach((a) => { const k = a.join("\n"); if (!seen[k]) { seen[k] = 1; all.push(a); } });
+  q.accept = all;
+}
 Object.assign(EN.q, {
   "s1q1": {
     q: "Which values of `c` make `ft_isdigit(c)` return 1?",
@@ -1774,6 +1862,1040 @@ Object.assign(EN.q, {
     hint: "You have to stop at the last node, not go past it. And the empty list is a separate case."
   }
 });
+/* ===== Survival: ejercicios build (lote A) ===== */
+SURV.push(
+  { id: "sv_isalpha", st: 1, fn: "isalpha", type: "build",
+    q: "Construye `ft_isalpha` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_isalpha(int c)",
+      "{",
+      "    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))",
+      "        return (1);",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["    if ((c >= 'A' && c <= 'Z') && (c >= 'a' && c <= 'z'))", "    return (c);"],
+    why: "Un carácter es alfabético si es mayúscula `A`-`Z` o minúscula `a`-`z`: dos rangos unidos con `||`. Con `&&` ninguna letra cumpliría ambos rangos a la vez, y la función debe devolver 1 o 0, no el propio carácter.",
+    rel: ["isalnum", "isdigit"], hint: "Dos rangos de letras unidos por un OR." },
+  { id: "sv_isdigit", st: 1, fn: "isdigit", type: "build",
+    q: "Construye `ft_isdigit` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_isdigit(int c)",
+      "{",
+      "    if (c >= '0' && c <= '9')",
+      "        return (1);",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["    if (c > '0' && c < '9')", "    return (c - '0');"],
+    why: "Los dígitos ocupan el rango contiguo `'0'`-`'9'` de la tabla ASCII, ambos extremos incluidos. Con `>` y `<` estrictos se excluyen el `0` y el `9`.",
+    rel: ["isalnum", "isalpha"], hint: "Comparaciones inclusivas en los dos extremos." },
+  { id: "sv_isascii", st: 1, fn: "isascii", type: "build",
+    q: "Construye `ft_isascii` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_isascii(int c)",
+      "{",
+      "    if (c >= 0 && c <= 127)",
+      "        return (1);",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["    if (c >= 0 && c <= 128)", "    if (c > 0 && c < 127)"],
+    why: "ASCII va de 0 a 127, ambos incluidos. `128` ya queda fuera de la tabla, y excluir el 0 o el 127 deja sin reconocer `'\\0'` o `DEL`.",
+    rel: ["isprint"], hint: "El rango válido es 0-127, cerrado por los dos lados." },
+  { id: "sv_isalnum", st: 1, fn: "isalnum", type: "build",
+    q: "Construye `ft_isalnum` reutilizando otras funciones tuyas. Sobran dos.",
+    sol: [
+      "int     ft_isalnum(int c)",
+      "{",
+      "    if (ft_isalpha(c) || ft_isdigit(c))",
+      "        return (1);",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["    if (ft_isalpha(c) && ft_isdigit(c))", "    return (c);"],
+    why: "Alfanumérico es letra o dígito: basta un `||` entre `ft_isalpha` y `ft_isdigit`. Con `&&` nada pasaría el filtro, porque un carácter no puede ser letra y dígito a la vez.",
+    rel: ["isalpha", "isdigit"], hint: "Letra O dígito." },
+  { id: "sv_isprint", st: 1, fn: "isprint", type: "build",
+    q: "Construye `ft_isprint` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_isprint(int c)",
+      "{",
+      "    if (c >= 32 && c <= 126)",
+      "        return (1);",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["    if (c >= 32 && c <= 127)", "    if (c > 32 && c <= 126)"],
+    why: "Los imprimibles van del espacio (32) a `~` (126), ambos incluidos. El 127 es `DEL`, que no se imprime, y con `c > 32` se perdería el espacio.",
+    rel: ["isascii"], hint: "Del espacio a la tilde `~`." },
+  { id: "sv_toupper", st: 1, fn: "toupper", type: "build",
+    q: "Construye `ft_toupper` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_toupper(int c)",
+      "{",
+      "    if (c >= 'a' && c <= 'z')",
+      "        return (c - 32);",
+      "    return (c);",
+      "}"
+    ],
+    extra: ["    return (c + 32);", "    if (c >= 'A' && c <= 'Z')"],
+    why: "Sólo las minúsculas cambian: se restan 32 para llegar a la mayúscula. El resto de caracteres se devuelve intacto; sumar 32 sería convertir a minúscula.",
+    rel: ["tolower"], hint: "Entre `'a'` y `'z'` hay que restar la diferencia." },
+  { id: "sv_tolower", st: 1, fn: "tolower", type: "build",
+    q: "Construye `ft_tolower` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_tolower(int c)",
+      "{",
+      "    if (c >= 'A' && c <= 'Z')",
+      "        return (c + 32);",
+      "    return (c);",
+      "}"
+    ],
+    extra: ["    return (c - 32);", "    if (c >= 'a' && c <= 'z')"],
+    why: "Sólo las mayúsculas cambian: se suman 32 para llegar a la minúscula. El resto se devuelve igual; restar 32 sería convertir a mayúscula.",
+    rel: ["toupper"], hint: "Entre `'A'` y `'Z'` hay que sumar la diferencia." },
+  { id: "sv_putchar_fd", st: 1, fn: "putchar_fd", type: "build",
+    q: "Construye `ft_putchar_fd` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_putchar_fd(char c, int fd)",
+      "{",
+      "    write(fd, &c, 1);",
+      "}"
+    ],
+    extra: ["    write(fd, c, 1);", "    write(c, &fd, 1);"],
+    why: "`write` recibe primero el descriptor, después la dirección del dato y al final cuántos bytes escribir. Hay que pasar `&c`, no `c`, y el descriptor va en primer lugar.",
+    rel: ["putstr_fd", "putendl_fd"], hint: "`write(fd, dirección, bytes)`." },
+  { id: "sv_putstr_fd", st: 1, fn: "putstr_fd", type: "build",
+    q: "Construye `ft_putstr_fd` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_putstr_fd(char *s, int fd)",
+      "{",
+      "    if (!s)",
+      "        return ;",
+      "    write(fd, s, ft_strlen(s));",
+      "}"
+    ],
+    extra: ["    write(fd, s, ft_strlen(s) + 1);", "    write(fd, &s, ft_strlen(s));"],
+    why: "Se comprueba `s` contra NULL y se escribe toda la cadena de una vez con su longitud. `+ 1` escribiría el `'\\0'` y `&s` escribiría la dirección del puntero en lugar del texto.",
+    rel: ["strlen", "putchar_fd"], hint: "Un único `write` con `ft_strlen`." },
+  { id: "sv_putendl_fd", st: 1, fn: "putendl_fd", type: "build",
+    q: "Construye `ft_putendl_fd` reutilizando tus funciones anteriores. Sobran dos.",
+    sol: [
+      "void    ft_putendl_fd(char *s, int fd)",
+      "{",
+      "    ft_putstr_fd(s, fd);",
+      "    ft_putchar_fd('\\n', fd);",
+      "}"
+    ],
+    extra: ["    ft_putchar_fd(fd, '\\n');", "    ft_putstr_fd(fd, s);"],
+    why: "Primero se escribe la cadena y después el salto de línea, reutilizando `ft_putstr_fd` y `ft_putchar_fd`. Ojo con el orden de los argumentos: siempre el dato primero y el descriptor después.",
+    rel: ["putstr_fd", "putchar_fd"], hint: "Cadena primero, `'\\n'` después." },
+  { id: "sv_memset", st: 2, fn: "memset", type: "build",
+    q: "Construye `ft_memset` con las piezas. Sobran dos.",
+    sol: [
+      "void    *ft_memset(void *b, int c, size_t len)",
+      "{",
+      "    size_t  i;",
+      "    i = 0;",
+      "    while (i < len)",
+      "    {",
+      "        ((unsigned char *)b)[i] = (unsigned char)c;",
+      "        i++;",
+      "    }",
+      "    return (b);",
+      "}"
+    ],
+    extra: ["    while (i <= len)", "    return (b + len);"],
+    why: "Se recorre `b` byte a byte como `unsigned char` y se escribe `c` convertido a byte. `i <= len` se pasaría un byte del bloque, y hay que devolver el puntero original `b`, no uno desplazado.",
+    rel: ["bzero", "memcpy"], hint: "Hace falta convertir `b` a `unsigned char *` para indexar." },
+  { id: "sv_bzero", st: 1, fn: "bzero", type: "build",
+    q: "Construye `ft_bzero` reutilizando `ft_memset`. Sobran dos.",
+    sol: [
+      "void    ft_bzero(void *s, size_t n)",
+      "{",
+      "    ft_memset(s, 0, n);",
+      "}"
+    ],
+    extra: ["    ft_memset(s, n, 0);", "    ft_memset(s, '0', n);"],
+    why: "`bzero` es `memset` con el valor 0. El orden de `ft_memset` es puntero, valor, cantidad, y el valor es el número 0, no el carácter `'0'` (que vale 48).",
+    rel: ["memset", "calloc"], hint: "Es un `memset` con el valor cero." },
+  { id: "sv_lstnew", st: 2, fn: "lstnew", type: "build",
+    q: "Construye `ft_lstnew` con las piezas (`t_list` ya está definido). Sobran dos.",
+    sol: [
+      "t_list  *ft_lstnew(void *content)",
+      "{",
+      "    t_list  *node;",
+      "    node = malloc(sizeof(t_list));",
+      "    if (!node)",
+      "        return (NULL);",
+      "    node->content = content;",
+      "    node->next = NULL;",
+      "    return (node);",
+      "}"
+    ],
+    perm: [[[6, 6], [7, 7]]],
+    extra: ["    node = malloc(sizeof(t_list *));", "    node->content = &content;"],
+    why: "Se reserva espacio para la estructura entera (`sizeof(t_list)`, no el de un puntero), se comprueba el `malloc` y se rellenan `content` y `next`. `next` debe quedar a NULL para marcar el final de la lista.",
+    rel: ["lstadd_front", "lstadd_back"], hint: "Reserva, comprueba, rellena los dos campos y devuelve." }
+);
+Object.assign(EN.q, {
+  "sv_isalpha": { q: "Build `ft_isalpha` from the pieces. Two are left over.",
+    why: "A character is alphabetic if it is uppercase `A`-`Z` or lowercase `a`-`z`: two ranges joined with `||`. With `&&` no letter would satisfy both ranges at once, and the function must return 1 or 0, not the character itself.",
+    hint: "Two letter ranges joined by an OR." },
+  "sv_isdigit": { q: "Build `ft_isdigit` from the pieces. Two are left over.",
+    why: "Digits occupy the contiguous range `'0'`-`'9'` of the ASCII table, both ends included. Strict `>` and `<` would exclude `0` and `9`.",
+    hint: "Inclusive comparisons at both ends." },
+  "sv_isascii": { q: "Build `ft_isascii` from the pieces. Two are left over.",
+    why: "ASCII goes from 0 to 127, both included. `128` is already outside the table, and excluding 0 or 127 would reject `'\\0'` or `DEL`.",
+    hint: "The valid range is 0-127, closed on both sides." },
+  "sv_isalnum": { q: "Build `ft_isalnum` reusing other functions of yours. Two are left over.",
+    why: "Alphanumeric means letter or digit: a single `||` between `ft_isalpha` and `ft_isdigit` is enough. With `&&` nothing would pass the filter, because a character cannot be a letter and a digit at once.",
+    hint: "Letter OR digit." },
+  "sv_isprint": { q: "Build `ft_isprint` from the pieces. Two are left over.",
+    why: "Printable characters go from space (32) to `~` (126), both included. 127 is `DEL`, which does not print, and `c > 32` would lose the space.",
+    hint: "From the space to the tilde `~`." },
+  "sv_toupper": { q: "Build `ft_toupper` from the pieces. Two are left over.",
+    why: "Only lowercase letters change: subtract 32 to reach the uppercase one. Every other character is returned untouched; adding 32 would convert to lowercase instead.",
+    hint: "Between `'a'` and `'z'` you must subtract the difference." },
+  "sv_tolower": { q: "Build `ft_tolower` from the pieces. Two are left over.",
+    why: "Only uppercase letters change: add 32 to reach the lowercase one. Every other character is returned as is; subtracting 32 would convert to uppercase instead.",
+    hint: "Between `'A'` and `'Z'` you must add the difference." },
+  "sv_putchar_fd": { q: "Build `ft_putchar_fd` from the pieces. Two are left over.",
+    why: "`write` takes the descriptor first, then the address of the data, and finally how many bytes to write. You must pass `&c`, not `c`, and the descriptor comes first.",
+    hint: "`write(fd, address, bytes)`." },
+  "sv_putstr_fd": { q: "Build `ft_putstr_fd` from the pieces. Two are left over.",
+    why: "Check `s` against NULL and write the whole string in one go using its length. `+ 1` would write the `'\\0'`, and `&s` would write the pointer's address instead of the text.",
+    hint: "A single `write` with `ft_strlen`." },
+  "sv_putendl_fd": { q: "Build `ft_putendl_fd` reusing your earlier functions. Two are left over.",
+    why: "Write the string first and then the newline, reusing `ft_putstr_fd` and `ft_putchar_fd`. Watch the argument order: data first, descriptor second.",
+    hint: "String first, `'\\n'` after." },
+  "sv_memset": { q: "Build `ft_memset` from the pieces. Two are left over.",
+    why: "Walk `b` byte by byte as `unsigned char` and write `c` converted to a byte. `i <= len` would run one byte past the block, and you must return the original pointer `b`, not an offset one.",
+    hint: "You need to cast `b` to `unsigned char *` to index it." },
+  "sv_bzero": { q: "Build `ft_bzero` reusing `ft_memset`. Two are left over.",
+    why: "`bzero` is `memset` with the value 0. The order for `ft_memset` is pointer, value, count, and the value is the number 0, not the character `'0'` (which is 48).",
+    hint: "It is a `memset` with value zero." },
+  "sv_lstnew": { q: "Build `ft_lstnew` from the pieces (`t_list` is already defined). Two are left over.",
+    why: "Allocate space for the whole struct (`sizeof(t_list)`, not the size of a pointer), check the `malloc`, and fill in `content` and `next`. `next` must be NULL to mark the end of the list.",
+    hint: "Allocate, check, fill both fields and return." }
+});
+/* ===== Modo supervivencia: ejercicios build (lote B) ===== */
+SURV.push(
+  {
+    id: "sv_lstadd_front", st: 1, fn: "lstadd_front", type: "build",
+    q: "Construye `ft_lstadd_front` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_lstadd_front(t_list **lst, t_list *new)",
+      "{",
+      "    if (!lst || !new)",
+      "        return ;",
+      "    new->next = *lst;",
+      "    *lst = new;",
+      "}"
+    ],
+    extra: ["    (*lst)->next = new;", "    *lst = new->next;"],
+    why: "El nuevo nodo debe apuntar primero a la cabeza actual (`new->next = *lst`) y sólo después se actualiza la cabeza (`*lst = new`). Si inviertes el orden, pierdes el resto de la lista.",
+    rel: ["lstnew", "lstadd_back"],
+    hint: "Primero engancha el nodo nuevo a la lista; luego conviértelo en la cabeza."
+  },
+  {
+    id: "sv_lstsize", st: 1, fn: "lstsize", type: "build",
+    q: "Construye `ft_lstsize` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_lstsize(t_list *lst)",
+      "{",
+      "    int     i;",
+      "    i = 0;",
+      "    while (lst)",
+      "    {",
+      "        i++;",
+      "        lst = lst->next;",
+      "    }",
+      "    return (i);",
+      "}"
+    ],
+    extra: ["    while (lst->next)", "    return (i + 1);"],
+    perm: [[[6, 6], [7, 7]]],
+    why: "Se recorre la lista mientras el nodo actual exista, contando uno por nodo. `while (lst->next)` rompe con la lista vacía (NULL) y se dejaría el último nodo sin contar.",
+    rel: ["lstlast"],
+    hint: "Avanza al siguiente nodo hasta llegar a NULL, sumando uno en cada paso."
+  },
+  {
+    id: "sv_lstlast", st: 1, fn: "lstlast", type: "build",
+    q: "Construye `ft_lstlast` con las piezas. Sobran dos.",
+    sol: [
+      "t_list  *ft_lstlast(t_list *lst)",
+      "{",
+      "    if (!lst)",
+      "        return (NULL);",
+      "    while (lst->next)",
+      "        lst = lst->next;",
+      "    return (lst);",
+      "}"
+    ],
+    extra: ["    while (lst)", "    return (lst->next);"],
+    why: "El último nodo es el que tiene `next == NULL`, así que el bucle se detiene un paso antes: `while (lst->next)`. Con `while (lst)` acabarías devolviendo NULL, y la lista vacía se trata aparte.",
+    rel: ["lstsize", "lstadd_back"],
+    hint: "Para antes de caer en NULL: mira `lst->next`, no `lst`."
+  },
+  {
+    id: "sv_memcpy", st: 2, fn: "memcpy", type: "build",
+    q: "Construye `ft_memcpy` con las piezas. Sobran dos.",
+    sol: [
+      "void    *ft_memcpy(void *dst, const void *src, size_t n)",
+      "{",
+      "    size_t  i;",
+      "    if (!dst && !src)",
+      "        return (NULL);",
+      "    i = 0;",
+      "    while (i < n)",
+      "    {",
+      "        ((unsigned char *)dst)[i] = ((unsigned char *)src)[i];",
+      "        i++;",
+      "    }",
+      "    return (dst);",
+      "}"
+    ],
+    extra: ["    while (i <= n)", "        ((unsigned char *)src)[i] = ((unsigned char *)dst)[i];"],
+    perm: [[[3, 4], [5, 5]]],
+    why: "Se copia byte a byte desde `src` hacia `dst`, exactamente `n` bytes (`i < n`), y se devuelve `dst`. Con `<=` copiarías un byte de más, y con `src` y `dst` intercambiados copiarías en sentido contrario.",
+    rel: ["memmove", "bzero"],
+    hint: "Hay que convertir los `void *` a `unsigned char *` para poder indexar."
+  },
+  {
+    id: "sv_memchr", st: 2, fn: "memchr", type: "build",
+    q: "Construye `ft_memchr` con las piezas. Sobran dos.",
+    sol: [
+      "void    *ft_memchr(const void *s, int c, size_t n)",
+      "{",
+      "    size_t  i;",
+      "    i = 0;",
+      "    while (i < n)",
+      "    {",
+      "        if (((unsigned char *)s)[i] == (unsigned char)c)",
+      "            return ((unsigned char *)s + i);",
+      "        i++;",
+      "    }",
+      "    return (NULL);",
+      "}"
+    ],
+    extra: ["        if (((unsigned char *)s)[i] == (char)c)", "            return ((unsigned char *)s);"],
+    why: "Se busca el byte `(unsigned char)c` en los primeros `n` bytes y se devuelve la dirección donde aparece (`s + i`, no `s`). Comparar con `(char)c` falla con bytes mayores que 127, porque el signo cambia el resultado.",
+    rel: ["strchr", "memcmp"],
+    hint: "Compara como `unsigned char` y devuelve la posición del acierto, no el inicio."
+  },
+  {
+    id: "sv_memcmp", st: 2, fn: "memcmp", type: "build",
+    q: "Construye `ft_memcmp` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_memcmp(const void *s1, const void *s2, size_t n)",
+      "{",
+      "    size_t          i;",
+      "    unsigned char   *a;",
+      "    unsigned char   *b;",
+      "    a = (unsigned char *)s1;",
+      "    b = (unsigned char *)s2;",
+      "    i = 0;",
+      "    while (i < n)",
+      "    {",
+      "        if (a[i] != b[i])",
+      "            return (a[i] - b[i]);",
+      "        i++;",
+      "    }",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["        if (a[i] == b[i])", "            return (b[i] - a[i]);"],
+    perm: [[[2, 2], [3, 3], [4, 4]], [[5, 5], [6, 6], [7, 7]]],
+    why: "Se compara byte a byte como `unsigned char` y, en la primera diferencia, se devuelve `a[i] - b[i]`. Si restas al revés, el signo del resultado es el contrario al de libc.",
+    rel: ["strncmp", "memchr"],
+    hint: "Para en el primer byte distinto y devuelve la resta en el orden s1 - s2."
+  },
+  {
+    id: "sv_strchr", st: 2, fn: "strchr", type: "build",
+    q: "Construye `ft_strchr` con las piezas. Sobran dos.",
+    sol: [
+      "char    *ft_strchr(const char *s, int c)",
+      "{",
+      "    while (*s)",
+      "    {",
+      "        if (*s == (char)c)",
+      "            return ((char *)s);",
+      "        s++;",
+      "    }",
+      "    if ((char)c == '\\0')",
+      "        return ((char *)s);",
+      "    return (NULL);",
+      "}"
+    ],
+    extra: ["    while (s)", "        if (*s == c)"],
+    why: "Se recorre la cadena buscando `(char)c`. Tras el bucle, `s` apunta al `'\\0'`, que también forma parte de la cadena: si se busca `'\\0'`, se devuelve esa dirección. Sin la conversión `(char)c` fallan valores fuera del rango de `char`.",
+    rel: ["strrchr", "memchr"],
+    hint: "No olvides que buscar `'\\0'` debe devolver el final de la cadena."
+  },
+  {
+    id: "sv_strrchr", st: 2, fn: "strrchr", type: "build",
+    q: "Construye `ft_strrchr` con las piezas. Sobran dos.",
+    sol: [
+      "char    *ft_strrchr(const char *s, int c)",
+      "{",
+      "    char    *last;",
+      "    last = NULL;",
+      "    while (*s)",
+      "    {",
+      "        if (*s == (char)c)",
+      "            last = (char *)s;",
+      "        s++;",
+      "    }",
+      "    if ((char)c == '\\0')",
+      "        return ((char *)s);",
+      "    return (last);",
+      "}"
+    ],
+    extra: ["    last = (char *)s;", "            return ((char *)s);"],
+    why: "Se recorre toda la cadena guardando en `last` la última coincidencia, y se devuelve al final. Si `last` empieza apuntando a `s`, devolverías un acierto falso; y salir en la primera coincidencia sería `strchr`, no `strrchr`.",
+    rel: ["strchr"],
+    hint: "Guarda cada coincidencia y no te detengas hasta el final."
+  },
+  {
+    id: "sv_strncmp", st: 2, fn: "strncmp", type: "build",
+    q: "Construye `ft_strncmp` con las piezas. Sobran dos.",
+    sol: [
+      "int     ft_strncmp(const char *s1, const char *s2, size_t n)",
+      "{",
+      "    size_t  i;",
+      "    i = 0;",
+      "    while (i < n && (s1[i] || s2[i]))",
+      "    {",
+      "        if ((unsigned char)s1[i] != (unsigned char)s2[i])",
+      "            return ((unsigned char)s1[i] - (unsigned char)s2[i]);",
+      "        i++;",
+      "    }",
+      "    return (0);",
+      "}"
+    ],
+    extra: ["            return (s1[i] - s2[i]);", "    while (i < n && s1[i] && s2[i])"],
+    why: "Se compara hasta `n` caracteres como `unsigned char`, y el bucle sigue mientras alguna de las dos cadenas no haya terminado, para que el `'\\0'` también se compare. Con `&&` pararías antes de ver la diferencia contra el terminador, y restar `char` con signo da mal el resultado con bytes mayores que 127.",
+    rel: ["memcmp"],
+    hint: "Si una cadena acaba antes que la otra, el `'\\0'` debe contar en la comparación."
+  },
+  {
+    id: "sv_strdup", st: 2, fn: "strdup", type: "build",
+    q: "Construye `ft_strdup` con las piezas. Sobran dos.",
+    sol: [
+      "char    *ft_strdup(const char *s1)",
+      "{",
+      "    char    *p;",
+      "    size_t  len;",
+      "    len = ft_strlen(s1) + 1;",
+      "    p = malloc(len);",
+      "    if (!p)",
+      "        return (NULL);",
+      "    ft_memcpy(p, s1, len);",
+      "    return (p);",
+      "}"
+    ],
+    extra: ["    len = ft_strlen(s1);", "    ft_memcpy(s1, p, len);"],
+    perm: [[[2, 2], [3, 3]]],
+    why: "Se reserva `ft_strlen(s1) + 1` bytes (el `+ 1` es para el `'\\0'`), se comprueba el `malloc` y se copia todo, terminador incluido. Sin el `+ 1` la copia no queda terminada; y `ft_memcpy` recibe primero el destino.",
+    rel: ["strlen", "memcpy"],
+    hint: "Reserva espacio para el terminador y copia `len` bytes de origen a destino."
+  },
+  {
+    id: "sv_calloc", st: 3, fn: "calloc", type: "build",
+    q: "Construye `ft_calloc` con las piezas. Sobran tres.",
+    sol: [
+      "void    *ft_calloc(size_t count, size_t size)",
+      "{",
+      "    void    *p;",
+      "    if (count && size > (size_t)-1 / count)",
+      "        return (NULL);",
+      "    p = malloc(count * size);",
+      "    if (!p)",
+      "        return (NULL);",
+      "    ft_bzero(p, count * size);",
+      "    return (p);",
+      "}"
+    ],
+    extra: ["    if (count * size > (size_t)-1)", "    p = malloc(count + size);", "    ft_bzero(p, count);"],
+    why: "Se comprueba que `count * size` no desborde dividiendo (`size > SIZE_MAX / count`), se reserva y se pone todo a cero. Comprobar el desbordamiento después de multiplicar no sirve: el producto ya se ha truncado y nunca superaría el máximo.",
+    rel: ["bzero", "memset"],
+    hint: "Para detectar el desbordamiento, divide en vez de multiplicar."
+  },
+  {
+    id: "sv_striteri", st: 2, fn: "striteri", type: "build",
+    q: "Construye `ft_striteri` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_striteri(char *s, void (*f)(unsigned int, char *))",
+      "{",
+      "    unsigned int    i;",
+      "    if (!s || !f)",
+      "        return ;",
+      "    i = 0;",
+      "    while (s[i])",
+      "    {",
+      "        f(i, &s[i]);",
+      "        i++;",
+      "    }",
+      "}"
+    ],
+    extra: ["        f(s[i], i);", "        f(i, s[i]);"],
+    perm: [[[3, 4], [5, 5]]],
+    why: "A `f` se le pasa el índice y la dirección del carácter (`&s[i]`), para que pueda modificarlo en el sitio. Pasar el carácter por valor, o los argumentos en otro orden, no respeta el prototipo `(unsigned int, char *)`.",
+    rel: ["strmapi"],
+    hint: "`f` recibe primero el índice y luego un puntero al carácter."
+  }
+);
+Object.assign(EN.q, {
+  "sv_lstadd_front": {
+    q: "Build `ft_lstadd_front` from the pieces. Two are left over.",
+    why: "The new node must first point to the current head (`new->next = *lst`), and only then is the head updated (`*lst = new`). If you swap the order, you lose the rest of the list.",
+    hint: "First link the new node to the list; then make it the head."
+  },
+  "sv_lstsize": {
+    q: "Build `ft_lstsize` from the pieces. Two are left over.",
+    why: "You walk the list while the current node exists, counting one per node. `while (lst->next)` breaks on an empty list (NULL) and would leave the last node uncounted.",
+    hint: "Move to the next node until you reach NULL, adding one at each step."
+  },
+  "sv_lstlast": {
+    q: "Build `ft_lstlast` from the pieces. Two are left over.",
+    why: "The last node is the one with `next == NULL`, so the loop stops one step earlier: `while (lst->next)`. With `while (lst)` you would end up returning NULL, and the empty list is handled separately.",
+    hint: "Stop before falling off into NULL: look at `lst->next`, not `lst`."
+  },
+  "sv_memcpy": {
+    q: "Build `ft_memcpy` from the pieces. Two are left over.",
+    why: "You copy byte by byte from `src` to `dst`, exactly `n` bytes (`i < n`), and return `dst`. With `<=` you would copy one byte too many, and with `src` and `dst` swapped you would copy in the opposite direction.",
+    hint: "You must cast the `void *` to `unsigned char *` in order to index them."
+  },
+  "sv_memchr": {
+    q: "Build `ft_memchr` from the pieces. Two are left over.",
+    why: "You look for the byte `(unsigned char)c` in the first `n` bytes and return the address where it appears (`s + i`, not `s`). Comparing with `(char)c` fails for bytes above 127, because the sign changes the result.",
+    hint: "Compare as `unsigned char` and return the position of the match, not the start."
+  },
+  "sv_memcmp": {
+    q: "Build `ft_memcmp` from the pieces. Two are left over.",
+    why: "You compare byte by byte as `unsigned char` and, at the first difference, return `a[i] - b[i]`. If you subtract the other way round, the sign of the result is the opposite of libc's.",
+    hint: "Stop at the first differing byte and return the difference in s1 - s2 order."
+  },
+  "sv_strchr": {
+    q: "Build `ft_strchr` from the pieces. Two are left over.",
+    why: "You walk the string looking for `(char)c`. After the loop, `s` points at the `'\\0'`, which is also part of the string: if you search for `'\\0'`, that address is returned. Without the `(char)c` conversion, values outside the `char` range fail.",
+    hint: "Don't forget that searching for `'\\0'` must return the end of the string."
+  },
+  "sv_strrchr": {
+    q: "Build `ft_strrchr` from the pieces. Two are left over.",
+    why: "You walk the whole string, storing the latest match in `last`, and return it at the end. If `last` starts out pointing to `s`, you would return a false hit; and leaving at the first match would be `strchr`, not `strrchr`.",
+    hint: "Save every match and do not stop until the end."
+  },
+  "sv_strncmp": {
+    q: "Build `ft_strncmp` from the pieces. Two are left over.",
+    why: "You compare up to `n` characters as `unsigned char`, and the loop keeps going while either string has not ended, so the `'\\0'` is compared too. With `&&` you would stop before seeing the difference against the terminator, and subtracting signed `char` gives the wrong result for bytes above 127.",
+    hint: "If one string ends before the other, the `'\\0'` must count in the comparison."
+  },
+  "sv_strdup": {
+    q: "Build `ft_strdup` from the pieces. Two are left over.",
+    why: "You allocate `ft_strlen(s1) + 1` bytes (the `+ 1` is for the `'\\0'`), check `malloc` and copy everything, terminator included. Without the `+ 1` the copy is not terminated; and `ft_memcpy` takes the destination first.",
+    hint: "Reserve room for the terminator and copy `len` bytes from source to destination."
+  },
+  "sv_calloc": {
+    q: "Build `ft_calloc` from the pieces. Three are left over.",
+    why: "You check that `count * size` does not overflow by dividing (`size > SIZE_MAX / count`), allocate, and zero everything. Checking for overflow after multiplying is useless: the product has already wrapped around and could never exceed the maximum.",
+    hint: "To detect overflow, divide instead of multiplying."
+  },
+  "sv_striteri": {
+    q: "Build `ft_striteri` from the pieces. Two are left over.",
+    why: "`f` receives the index and the address of the character (`&s[i]`), so it can modify it in place. Passing the character by value, or the arguments in another order, does not match the prototype `(unsigned int, char *)`.",
+    hint: "`f` takes the index first and then a pointer to the character."
+  }
+});
+/* ===== Modo supervivencia: ejercicios build (lote C) ===== */
+SURV.push(
+  {
+    id: "sv_lstdelone", st: 2, fn: "lstdelone", type: "build",
+    q: "Construye `ft_lstdelone` con las piezas. Sobran dos.",
+    sol: [
+      "void    ft_lstdelone(t_list *lst, void (*del)(void *))",
+      "{",
+      "    if (!lst || !del)",
+      "        return ;",
+      "    del(lst->content);",
+      "    free(lst);",
+      "}"
+    ],
+    extra: ["    del(lst);", "    free(lst->next);"],
+    why: "Primero se libera el contenido con la función `del` que te pasan y después el nodo con `free`. Si liberas el nodo antes, ya no puedes leer `lst->content`; y `lst->next` no se toca: el resto de la lista no es cosa de esta función.",
+    rel: ["lstclear", "lstnew"],
+    hint: "Contenido primero, nodo después."
+  },
+  {
+    id: "sv_lstiter", st: 2, fn: "lstiter", type: "build",
+    q: "Construye `ft_lstiter` con las piezas. Sobran tres.",
+    sol: [
+      "void    ft_lstiter(t_list *lst, void (*f)(void *))",
+      "{",
+      "    if (!f)",
+      "        return ;",
+      "    while (lst)",
+      "    {",
+      "        f(lst->content);",
+      "        lst = lst->next;",
+      "    }",
+      "}"
+    ],
+    extra: ["    while (lst->next)", "        f(lst);", "        lst++;"],
+    why: "Se recorre mientras `lst` no sea NULL y se aplica `f` al `content` de cada nodo, no al nodo entero. Con `while (lst->next)` te saltas el último nodo (y revientas si la lista es NULL), y `lst++` no sigue punteros: una lista no es un array.",
+    rel: ["lstmap", "lstsize"],
+    hint: "Aplica f al contenido y luego avanza con next."
+  },
+  {
+    id: "sv_strlcat", st: 3, fn: "strlcat", type: "build",
+    q: "Construye `ft_strlcat` con las piezas. Sobran tres.",
+    sol: [
+      "size_t  ft_strlcat(char *dst, const char *src, size_t size)",
+      "{",
+      "    size_t  dst_len;",
+      "    size_t  src_len;",
+      "    dst_len = ft_strlen(dst);",
+      "    src_len = ft_strlen(src);",
+      "    if (size <= dst_len)",
+      "        return (size + src_len);",
+      "    ft_strlcpy(dst + dst_len, src, size - dst_len);",
+      "    return (dst_len + src_len);",
+      "}"
+    ],
+    perm: [[[2, 2], [3, 3]], [[4, 4], [5, 5]]],
+    extra: [
+      "    if (size <= src_len)",
+      "    ft_strlcpy(dst + dst_len, src, size - dst_len - 1);",
+      "    return (dst_len + src_len + 1);"
+    ],
+    why: "`strlcat` devuelve siempre la longitud que tendría el resultado sin truncar: `dst_len + src_len`, o `size + src_len` si `dst` ya no cabe en `size`. Copiar con `ft_strlcpy` a partir de `dst + dst_len` y con `size - dst_len` ya reserva el hueco del `'\\0'`; restar uno más pierde un carácter.",
+    rel: ["strlcpy", "strlen"],
+    hint: "Si dst ya llena size, no copies nada: devuelve size + src_len."
+  },
+  {
+    id: "sv_atoi", st: 3, fn: "atoi", type: "build",
+    q: "Construye `ft_atoi` con las piezas. Sobran tres.",
+    sol: [
+      "int     ft_atoi(const char *nptr)",
+      "{",
+      "    int     sign;",
+      "    int     res;",
+      "    sign = 1;",
+      "    res = 0;",
+      "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))",
+      "        nptr++;",
+      "    if (*nptr == '-')",
+      "        sign = -1;",
+      "    if (*nptr == '-' || *nptr == '+')",
+      "        nptr++;",
+      "    while (*nptr >= '0' && *nptr <= '9')",
+      "    {",
+      "        res = res * 10 + (*nptr - '0');",
+      "        nptr++;",
+      "    }",
+      "    return (res * sign);",
+      "}"
+    ],
+    perm: [[[2, 2], [3, 3]], [[4, 4], [5, 5]]],
+    extra: [
+      "    while (*nptr > '0' && *nptr <= '9')",
+      "        res = res * 10 + *nptr;",
+      "    return (res);"
+    ],
+    alts: [
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    sign = 1;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    res = 0;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    sign = 1;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    res = 0;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    sign = 1;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    if (*nptr == '-')", "        sign = -1;", "    res = 0;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    sign = 1;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    if (*nptr == '-')", "        sign = -1;", "    res = 0;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    sign = 1;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    res = 0;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    sign = 1;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    res = 0;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    res = 0;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    res = 0;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    res = 0;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    res = 0;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    res = 0;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    res = 0;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    res = 0;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    res = 0;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     sign;", "    int     res;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    res = 0;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"],
+      ["int     ft_atoi(const char *nptr)", "{", "    int     res;", "    int     sign;", "    while (*nptr == ' ' || (*nptr >= '\\t' && *nptr <= '\\r'))", "        nptr++;", "    res = 0;", "    sign = 1;", "    if (*nptr == '-')", "        sign = -1;", "    if (*nptr == '-' || *nptr == '+')", "        nptr++;", "    while (*nptr >= '0' && *nptr <= '9')", "    {", "        res = res * 10 + (*nptr - '0');", "        nptr++;", "    }", "    return (res * sign);", "}"]
+    ],
+    why: "El orden es: saltar espacios (`' '` y de `'\\t'` a `'\\r'`), leer un único signo opcional, acumular dígitos y devolver `res * sign`. Las trampas clásicas son olvidar restar `'0'` (acumulas códigos ASCII), dejar fuera el `'0'` con un `>` y perder el signo.",
+    rel: ["isdigit", "itoa"],
+    hint: "Espacios, signo, dígitos; el signo se aplica al final."
+  },
+  {
+    id: "sv_strnstr", st: 3, fn: "strnstr", type: "build",
+    q: "Construye `ft_strnstr` con las piezas. Sobran tres.",
+    sol: [
+      "char    *ft_strnstr(const char *haystack, const char *needle, size_t len)",
+      "{",
+      "    size_t  n_len;",
+      "    n_len = ft_strlen(needle);",
+      "    if (n_len == 0)",
+      "        return ((char *)haystack);",
+      "    while (*haystack && len >= n_len)",
+      "    {",
+      "        if (ft_strncmp(haystack, needle, n_len) == 0)",
+      "            return ((char *)haystack);",
+      "        haystack++;",
+      "        len--;",
+      "    }",
+      "    return (NULL);",
+      "}"
+    ],
+    perm: [[[10, 10], [11, 11]]],
+    extra: [
+      "    while (*haystack && len > n_len)",
+      "        if (ft_strncmp(haystack, needle, len) == 0)",
+      "        len++;"
+    ],
+    alts: [
+      ["char    *ft_strnstr(const char *haystack, const char *needle, size_t len)", "{", "    size_t  n_len;", "    n_len = ft_strlen(needle);", "    if (n_len == 0)", "        return ((char *)haystack);", "    while (*haystack && len >= n_len)", "    {", "        len--;", "        if (ft_strncmp(haystack, needle, n_len) == 0)", "            return ((char *)haystack);", "        haystack++;", "    }", "    return (NULL);", "}"],
+      ["char    *ft_strnstr(const char *haystack, const char *needle, size_t len)", "{", "    size_t  n_len;", "    n_len = ft_strlen(needle);", "    while (*haystack && len >= n_len)", "    {", "        if (ft_strncmp(haystack, needle, n_len) == 0)", "            return ((char *)haystack);", "        haystack++;", "        len--;", "    }", "    if (n_len == 0)", "        return ((char *)haystack);", "    return (NULL);", "}"],
+      ["char    *ft_strnstr(const char *haystack, const char *needle, size_t len)", "{", "    size_t  n_len;", "    n_len = ft_strlen(needle);", "    while (*haystack && len >= n_len)", "    {", "        if (ft_strncmp(haystack, needle, n_len) == 0)", "            return ((char *)haystack);", "        len--;", "        haystack++;", "    }", "    if (n_len == 0)", "        return ((char *)haystack);", "    return (NULL);", "}"],
+      ["char    *ft_strnstr(const char *haystack, const char *needle, size_t len)", "{", "    size_t  n_len;", "    n_len = ft_strlen(needle);", "    while (*haystack && len >= n_len)", "    {", "        len--;", "        if (ft_strncmp(haystack, needle, n_len) == 0)", "            return ((char *)haystack);", "        haystack++;", "    }", "    if (n_len == 0)", "        return ((char *)haystack);", "    return (NULL);", "}"]
+    ],
+    why: "Un `needle` vacío devuelve `haystack`. Después, cada posición se compara sólo `n_len` bytes y el margen restante `len` baja con cada avance: mientras `len >= n_len` aún cabe una coincidencia. Con `len > n_len` pierdes la que acaba justo en el límite, y comparar `len` bytes en vez de `n_len` rompe las coincidencias.",
+    rel: ["strlen", "strncmp"],
+    hint: "Sigue mientras queden al menos n_len bytes dentro del límite."
+  },
+  {
+    id: "sv_strmapi", st: 3, fn: "strmapi", type: "build",
+    q: "Construye `ft_strmapi` con las piezas. Sobran tres.",
+    sol: [
+      "char    *ft_strmapi(char const *s, char (*f)(unsigned int, char))",
+      "{",
+      "    char            *res;",
+      "    unsigned int    i;",
+      "    if (!s || !f)",
+      "        return (NULL);",
+      "    i = ft_strlen(s);",
+      "    res = malloc(i + 1);",
+      "    if (!res)",
+      "        return (NULL);",
+      "    res[i] = '\\0';",
+      "    while (i-- > 0)",
+      "        res[i] = f(i, s[i]);",
+      "    return (res);",
+      "}"
+    ],
+    perm: [[[2, 2], [3, 3]]],
+    extra: [
+      "    res = malloc(i);",
+      "    while (i-- >= 0)",
+      "        res[i] = f(s[i], i);"
+    ],
+    why: "Se guarda la longitud en `i`, se reserva `i + 1` bytes (el `+ 1` es para el `'\\0'`), se escribe el terminador y se rellena hacia atrás con `f(índice, carácter)`. Con `i >= 0` sobre un `unsigned` el bucle nunca termina, y `f` recibe primero el índice y después el carácter.",
+    rel: ["strlen", "striteri"],
+    hint: "Reserva longitud + 1 y escribe el terminador antes del bucle."
+  },
+  {
+    id: "sv_substr", st: 3, fn: "substr", type: "build",
+    q: "Construye `ft_substr` con las piezas. Sobran tres.",
+    sol: [
+      "char    *ft_substr(char const *s, unsigned int start, size_t len)",
+      "{",
+      "    char    *res;",
+      "    size_t  s_len;",
+      "    if (!s)",
+      "        return (NULL);",
+      "    s_len = ft_strlen(s);",
+      "    if (start > s_len)",
+      "        start = s_len;",
+      "    if (len > s_len - start)",
+      "        len = s_len - start;",
+      "    res = malloc(len + 1);",
+      "    if (!res)",
+      "        return (NULL);",
+      "    ft_strlcpy(res, s + start, len + 1);",
+      "    return (res);",
+      "}"
+    ],
+    perm: [[[2, 2], [3, 3]]],
+    extra: [
+      "    if (len < s_len - start)",
+      "    res = malloc(len);",
+      "    ft_strlcpy(res, s + start, len);"
+    ],
+    alts: [
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    res = malloc(len + 1);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    res = malloc(len + 1);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    s_len = ft_strlen(s);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    if (!res)", "        return (NULL);", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (!res)", "        return (NULL);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    s_len = ft_strlen(s);", "    if (!res)", "        return (NULL);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (start > s_len)", "        start = s_len;", "    if (len > s_len - start)", "        len = s_len - start;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    char    *res;", "    size_t  s_len;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"],
+      ["char    *ft_substr(char const *s, unsigned int start, size_t len)", "{", "    size_t  s_len;", "    char    *res;", "    if (!s)", "        return (NULL);", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    s_len = ft_strlen(s);", "    if (len > s_len - start)", "        len = s_len - start;", "    if (start > s_len)", "        start = s_len;", "    ft_strlcpy(res, s + start, len + 1);", "    return (res);", "}"]
+    ],
+    why: "Primero se ajusta `start` (si pasa del final, se queda en `s_len` y saldrá una cadena vacía) y después `len` a lo que realmente queda: `s_len - start`. Se reserva `len + 1` y se copia con `len + 1` porque `ft_strlcpy` cuenta el `'\\0'` dentro del tamaño; con `len` perderías el último carácter.",
+    rel: ["strlen", "strlcpy"],
+    hint: "Recorta start y len antes de reservar memoria."
+  },
+  {
+    id: "sv_lstclear", st: 3, fn: "lstclear", type: "build",
+    q: "Construye `ft_lstclear` con las piezas. Sobran tres.",
+    sol: [
+      "void    ft_lstclear(t_list **lst, void (*del)(void *))",
+      "{",
+      "    t_list  *tmp;",
+      "    if (!lst || !del)",
+      "        return ;",
+      "    while (*lst)",
+      "    {",
+      "        tmp = (*lst)->next;",
+      "        ft_lstdelone(*lst, del);",
+      "        *lst = tmp;",
+      "    }",
+      "}"
+    ],
+    extra: [
+      "    while ((*lst)->next)",
+      "        free(*lst);",
+      "        ft_lstdelone(lst, del);"
+    ],
+    why: "Hay que guardar `next` en `tmp` antes de borrar el nodo; si no, lees memoria ya liberada. Al terminar `*lst` queda en NULL, que es lo que pide el subject. `free(*lst)` se dejaría el contenido sin liberar: para eso existe `ft_lstdelone`.",
+    rel: ["lstdelone", "lstnew"],
+    hint: "Guarda el siguiente nodo antes de borrar el actual."
+  },
+  {
+    id: "sv_strtrim", st: 4, fn: "strtrim", type: "build",
+    q: "Construye `ft_strtrim`. Asume que existen `ft_strchr`, `ft_strlen` y `ft_substr`. Sobran tres.",
+    sol: [
+      "char    *ft_strtrim(char const *s1, char const *set)",
+      "{",
+      "    size_t  end;",
+      "    if (!s1 || !set)",
+      "        return (NULL);",
+      "    while (*s1 && ft_strchr(set, *s1))",
+      "        s1++;",
+      "    end = ft_strlen(s1);",
+      "    while (end > 0 && ft_strchr(set, s1[end - 1]))",
+      "        end--;",
+      "    return (ft_substr(s1, 0, end));",
+      "}"
+    ],
+    extra: [
+      "    while (ft_strchr(set, *s1))",
+      "    while (end > 0 && ft_strchr(set, s1[end]))",
+      "    return (ft_substr(s1, 0, end - 1));"
+    ],
+    why: "Se avanza `s1` por el principio, se mide lo que queda y se retrocede `end` por el final mirando `s1[end - 1]`, que es el último carácter real. La trampa: `ft_strchr(set, '\\0')` devuelve un puntero válido (al terminador de `set`), así que sin comprobar `*s1` antes el bucle se pasa del final.",
+    rel: ["strchr", "substr"],
+    hint: "Recorta el principio moviendo s1 y el final bajando end."
+  },
+  {
+    id: "sv_itoa", st: 4, fn: "itoa", type: "build",
+    q: "Construye `ft_itoa`. Asume que existe `static int num_len(int n)`, que cuenta los dígitos y suma 1 si `n` es negativo. Sobran tres.",
+    sol: [
+      "char    *ft_itoa(int n)",
+      "{",
+      "    char    *res;",
+      "    int     len;",
+      "    len = num_len(n);",
+      "    res = malloc(len + 1);",
+      "    if (!res)",
+      "        return (NULL);",
+      "    res[len] = '\\0';",
+      "    res[0] = '-';",
+      "    if (n > 0)",
+      "        n = -n;",
+      "    while (n < -9)",
+      "    {",
+      "        res[--len] = '0' - n % 10;",
+      "        n = n / 10;",
+      "    }",
+      "    res[--len] = '0' - n;",
+      "    return (res);",
+      "}"
+    ],
+    perm: [[[2, 2], [3, 3]], [[8, 8], [9, 9], [10, 11]]],
+    extra: [
+      "    res = malloc(len);",
+      "    while (n < 0)",
+      "        res[--len] = n % 10 + '0';"
+    ],
+    alts: [
+      ["char    *ft_itoa(int n)", "{", "    char    *res;", "    int     len;", "    len = num_len(n);", "    res = malloc(len + 1);", "    if (n > 0)", "        n = -n;", "    if (!res)", "        return (NULL);", "    res[len] = '\\0';", "    res[0] = '-';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    int     len;", "    char    *res;", "    len = num_len(n);", "    res = malloc(len + 1);", "    if (n > 0)", "        n = -n;", "    if (!res)", "        return (NULL);", "    res[len] = '\\0';", "    res[0] = '-';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    char    *res;", "    int     len;", "    len = num_len(n);", "    res = malloc(len + 1);", "    if (n > 0)", "        n = -n;", "    if (!res)", "        return (NULL);", "    res[0] = '-';", "    res[len] = '\\0';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    int     len;", "    char    *res;", "    len = num_len(n);", "    res = malloc(len + 1);", "    if (n > 0)", "        n = -n;", "    if (!res)", "        return (NULL);", "    res[0] = '-';", "    res[len] = '\\0';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    char    *res;", "    int     len;", "    len = num_len(n);", "    if (n > 0)", "        n = -n;", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    res[len] = '\\0';", "    res[0] = '-';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    int     len;", "    char    *res;", "    len = num_len(n);", "    if (n > 0)", "        n = -n;", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    res[len] = '\\0';", "    res[0] = '-';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    char    *res;", "    int     len;", "    len = num_len(n);", "    if (n > 0)", "        n = -n;", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    res[0] = '-';", "    res[len] = '\\0';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"],
+      ["char    *ft_itoa(int n)", "{", "    int     len;", "    char    *res;", "    len = num_len(n);", "    if (n > 0)", "        n = -n;", "    res = malloc(len + 1);", "    if (!res)", "        return (NULL);", "    res[0] = '-';", "    res[len] = '\\0';", "    while (n < -9)", "    {", "        res[--len] = '0' - n % 10;", "        n = n / 10;", "    }", "    res[--len] = '0' - n;", "    return (res);", "}"]
+    ],
+    why: "Se trabaja con `n` siempre negativo (o 0): `-INT_MIN` desborda, pero `-INT_MAX` no. Así `n % 10` es <= 0 y el dígito es `'0' - n % 10`; con `n % 10 + '0'` saldrían caracteres erróneos. El `'-'` se escribe siempre en `res[0]` y el último dígito se pone fuera del bucle para que el 0 también funcione.",
+    rel: ["atoi", "putnbr_fd"],
+    hint: "Usa un long, escribe el terminador y rellena de derecha a izquierda."
+  },
+  {
+    id: "sv_split", st: 4, fn: "split", type: "build",
+    q: "Construye `fill_words`, el bucle principal de `ft_split` (que ya reservó `res` con `word_count + 1` punteros). Asume que existen `static size_t word_len(char const *s, char c)` y `static char **free_all(char **res, size_t n)`, que libera `res[0..n-1]` y `res` y devuelve NULL. Sobran tres.",
+    sol: [
+      "static char **fill_words(char **res, char const *s, char c)",
+      "{",
+      "    size_t  i;",
+      "    i = 0;",
+      "    while (*s)",
+      "    {",
+      "        if (*s == c)",
+      "            s++;",
+      "        else",
+      "        {",
+      "            res[i] = ft_substr(s, 0, word_len(s, c));",
+      "            if (!res[i])",
+      "                return (free_all(res, i));",
+      "            s += word_len(s, c);",
+      "            i++;",
+      "        }",
+      "    }",
+      "    res[i] = NULL;",
+      "    return (res);",
+      "}"
+    ],
+    perm: [[[13, 13], [14, 14]]],
+    extra: [
+      "            s += word_len(s, c) - 1;",
+      "            res[i] = ft_substr(s, 0, word_len(s, c) + 1);",
+      "                return (NULL);"
+    ],
+    alts: [
+      ["static char **fill_words(char **res, char const *s, char c)", "{", "    size_t  i;", "    i = 0;", "    while (*s)", "    {", "        if (*s == c)", "            s++;", "        else", "        {", "            res[i] = ft_substr(s, 0, word_len(s, c));", "            s += word_len(s, c);", "            if (!res[i])", "                return (free_all(res, i));", "            i++;", "        }", "    }", "    res[i] = NULL;", "    return (res);", "}"]
+    ],
+    why: "Los separadores se saltan de uno en uno y cada palabra se copia con `ft_substr` y se avanza su longitud. Si un `ft_substr` falla hay que liberar lo ya reservado con `free_all`; devolver NULL a secas deja una fuga. Y `res[i] = NULL` al final marca el fin del array.",
+    rel: ["substr", "strtrim"],
+    hint: "Salta separadores; en cada palabra copia, comprueba el fallo y avanza su longitud."
+  },
+  {
+    id: "sv_lstmap", st: 4, fn: "lstmap", type: "build",
+    q: "Construye `ft_lstmap`. Asume que existen `ft_lstnew`, `ft_lstadd_back` y `ft_lstclear`. Sobran tres.",
+    sol: [
+      "t_list  *ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *))",
+      "{",
+      "    t_list  *new_lst;",
+      "    t_list  *node;",
+      "    new_lst = NULL;",
+      "    while (lst)",
+      "    {",
+      "        node = ft_lstnew(NULL);",
+      "        if (!node)",
+      "        {",
+      "            ft_lstclear(&new_lst, del);",
+      "            return (NULL);",
+      "        }",
+      "        node->content = f(lst->content);",
+      "        ft_lstadd_back(&new_lst, node);",
+      "        lst = lst->next;",
+      "    }",
+      "    return (new_lst);",
+      "}"
+    ],
+    perm: [[[2, 2], [3, 3]], [[13, 13], [14, 14]]],
+    extra: [
+      "        node->content = f(lst);",
+      "        ft_lstclear(&lst, del);",
+      "        ft_lstadd_back(&lst, node);"
+    ],
+    alts: [
+      ["t_list  *ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *))", "{", "    t_list  *new_lst;", "    t_list  *node;", "    new_lst = NULL;", "    while (lst)", "    {", "        node = ft_lstnew(NULL);", "        if (!node)", "        {", "            ft_lstclear(&new_lst, del);", "            return (NULL);", "        }", "        node->content = f(lst->content);", "        lst = lst->next;", "        ft_lstadd_back(&new_lst, node);", "    }", "    return (new_lst);", "}"],
+      ["t_list  *ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *))", "{", "    t_list  *node;", "    t_list  *new_lst;", "    new_lst = NULL;", "    while (lst)", "    {", "        node = ft_lstnew(NULL);", "        if (!node)", "        {", "            ft_lstclear(&new_lst, del);", "            return (NULL);", "        }", "        node->content = f(lst->content);", "        lst = lst->next;", "        ft_lstadd_back(&new_lst, node);", "    }", "    return (new_lst);", "}"],
+      ["t_list  *ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *))", "{", "    t_list  *new_lst;", "    t_list  *node;", "    new_lst = NULL;", "    while (lst)", "    {", "        node = ft_lstnew(NULL);", "        ft_lstadd_back(&new_lst, node);", "        if (!node)", "        {", "            ft_lstclear(&new_lst, del);", "            return (NULL);", "        }", "        node->content = f(lst->content);", "        lst = lst->next;", "    }", "    return (new_lst);", "}"],
+      ["t_list  *ft_lstmap(t_list *lst, void *(*f)(void *), void (*del)(void *))", "{", "    t_list  *node;", "    t_list  *new_lst;", "    new_lst = NULL;", "    while (lst)", "    {", "        node = ft_lstnew(NULL);", "        ft_lstadd_back(&new_lst, node);", "        if (!node)", "        {", "            ft_lstclear(&new_lst, del);", "            return (NULL);", "        }", "        node->content = f(lst->content);", "        lst = lst->next;", "    }", "    return (new_lst);", "}"]
+    ],
+    why: "Se construye una lista nueva; la original no se toca. Se crea primero el nodo vacío con `ft_lstnew(NULL)`: si falla, sólo hay que limpiar la lista parcial con `ft_lstclear(&new_lst, del)` (nunca la original) y no queda nada de `f` por liberar. `f` se aplica al `content`, no al nodo entero.",
+    rel: ["lstnew", "lstadd_back", "lstclear", "lstiter"],
+    hint: "Crea nodo a nodo; si uno falla, limpia lo que llevas de la lista nueva."
+  }
+);
+Object.assign(EN.q, {
+  "sv_lstdelone": {
+    q: "Build `ft_lstdelone` from the pieces. Two are left over.",
+    why: "First free the content with the `del` function you are given, then free the node itself with `free`. If you free the node first you can no longer read `lst->content`; and `lst->next` is left alone: the rest of the list is not this function's job.",
+    hint: "Content first, node after."
+  },
+  "sv_lstiter": {
+    q: "Build `ft_lstiter` from the pieces. Three are left over.",
+    why: "Loop while `lst` is not NULL and apply `f` to each node's `content`, not to the whole node. With `while (lst->next)` you skip the last node (and crash on a NULL list), and `lst++` does not follow pointers: a list is not an array.",
+    hint: "Apply f to the content, then advance with next."
+  },
+  "sv_strlcat": {
+    q: "Build `ft_strlcat` from the pieces. Three are left over.",
+    why: "`strlcat` always returns the length the result would have without truncation: `dst_len + src_len`, or `size + src_len` if `dst` already doesn't fit in `size`. Copying with `ft_strlcpy` from `dst + dst_len` and with `size - dst_len` already reserves room for the `'\\0'`; subtracting one more loses a character.",
+    hint: "If dst already fills size, copy nothing: return size + src_len."
+  },
+  "sv_atoi": {
+    q: "Build `ft_atoi` from the pieces. Three are left over.",
+    why: "The order is: skip whitespace (`' '` and `'\\t'` to `'\\r'`), read a single optional sign, accumulate digits and return `res * sign`. The classic traps are forgetting to subtract `'0'` (you accumulate ASCII codes), leaving out the `'0'` digit with a `>`, and losing the sign.",
+    hint: "Whitespace, sign, digits; the sign is applied at the end."
+  },
+  "sv_strnstr": {
+    q: "Build `ft_strnstr` from the pieces. Three are left over.",
+    why: "An empty `needle` returns `haystack`. After that, each position is compared for only `n_len` bytes and the remaining margin `len` drops with every step: while `len >= n_len` a match still fits. With `len > n_len` you miss a match ending exactly at the limit, and comparing `len` bytes instead of `n_len` breaks matches.",
+    hint: "Keep going while at least n_len bytes remain within the limit."
+  },
+  "sv_strmapi": {
+    q: "Build `ft_strmapi` from the pieces. Three are left over.",
+    why: "Store the length in `i`, allocate `i + 1` bytes (the `+ 1` is for the `'\\0'`), write the terminator and fill backwards with `f(index, character)`. With `i >= 0` on an `unsigned` the loop never ends, and `f` takes the index first and the character second.",
+    hint: "Allocate length + 1 and write the terminator before the loop."
+  },
+  "sv_substr": {
+    q: "Build `ft_substr` from the pieces. Three are left over.",
+    why: "First adjust `start` (if it is past the end it stays at `s_len` and you get an empty string), then `len` to what really remains: `s_len - start`. Allocate `len + 1` and copy with `len + 1` because `ft_strlcpy` counts the `'\\0'` inside the size; with `len` you would lose the last character.",
+    hint: "Clamp start and len before allocating memory."
+  },
+  "sv_lstclear": {
+    q: "Build `ft_lstclear` from the pieces. Three are left over.",
+    why: "You must save `next` in `tmp` before deleting the node; otherwise you read freed memory. At the end `*lst` is left as NULL, as the subject requires. `free(*lst)` would leave the content unfreed: that is what `ft_lstdelone` is for.",
+    hint: "Save the next node before deleting the current one."
+  },
+  "sv_strtrim": {
+    q: "Build `ft_strtrim`. Assume `ft_strchr`, `ft_strlen` and `ft_substr` exist. Three are left over.",
+    why: "Advance `s1` from the start, measure what remains and move `end` back from the end looking at `s1[end - 1]`, the last real character. The trap: `ft_strchr(set, '\\0')` returns a valid pointer (to the terminator of `set`), so without checking `*s1` first the loop runs past the end.",
+    hint: "Trim the start by moving s1 and the end by lowering end."
+  },
+  "sv_itoa": {
+    q: "Build `ft_itoa`. Assume `static int num_len(int n)` exists; it counts the digits and adds 1 if `n` is negative. Three are left over.",
+    why: "Always work with `n` negative (or 0): `-INT_MIN` overflows but `-INT_MAX` does not. That makes `n % 10` <= 0, so the digit is `'0' - n % 10`; `n % 10 + '0'` would give wrong characters. The `'-'` is always written to `res[0]` and the last digit is placed outside the loop so 0 works too.",
+    hint: "Use a long, write the terminator and fill right to left."
+  },
+  "sv_split": {
+    q: "Build `fill_words`, the main loop of `ft_split` (which has already allocated `res` with `word_count + 1` pointers). Assume `static size_t word_len(char const *s, char c)` and `static char **free_all(char **res, size_t n)` exist; the latter frees `res[0..n-1]` and `res` and returns NULL. Three are left over.",
+    why: "Separators are skipped one at a time and each word is copied with `ft_substr`, then you advance by its length. If an `ft_substr` fails you must free what was already allocated with `free_all`; a bare NULL return leaks. And `res[i] = NULL` at the end marks the end of the array.",
+    hint: "Skip separators; for each word copy, check for failure and advance by its length."
+  },
+  "sv_lstmap": {
+    q: "Build `ft_lstmap`. Assume `ft_lstnew`, `ft_lstadd_back` and `ft_lstclear` exist. Three are left over.",
+    why: "You build a new list; the original is never touched. Create the empty node first with `ft_lstnew(NULL)`: if it fails you only need to clear the partial list with `ft_lstclear(&new_lst, del)` (never the original) and nothing from `f` is left to free. `f` is applied to the `content`, not to the whole node.",
+    hint: "Create node by node; if one fails, clear what you have of the new list."
+  }
+});
 /* ===== Motor del juego ===== */
 (function () {
   "use strict";
@@ -1807,8 +2929,10 @@ Object.assign(EN.q, {
   /* ---- estado ---- */
   const S = {
     solved: {}, view: "start", sector: 1, queue: [], qi: 0, done: 0, total: 0, lives: MAXLIVES, review: false,
-    sel: null, msel: new Set(), fill: "", checked: false, ok: null, hint: false, selFn: null, armed: false
+    sel: null, msel: new Set(), fill: "", checked: false, ok: null, hint: false, selFn: null, armed: false,
+    mode: "normal", over: false, best: 0
   };
+  Q.concat(SURV).forEach(expandAlts);
   const byId = {};
   Q.forEach((q) => { byId[q.id] = q; });
   const secQ = (n) => Q.filter((q) => q.s === n);
@@ -1846,7 +2970,7 @@ Object.assign(EN.q, {
   function loadLocal() {
     try {
       const r = localStorage.getItem(LS);
-      if (r) mergeSolved((JSON.parse(r) || {}).solved);
+      if (r) { const o = JSON.parse(r) || {}; mergeSolved(o.solved); if (+o.best > S.best) S.best = +o.best; }
     } catch (e) { /* sin almacenamiento */ }
   }
   let footMode = "local";
@@ -1863,7 +2987,7 @@ Object.assign(EN.q, {
     if (lb) lb.innerHTML = '<span class="' + (LANG === "es" ? "on" : "") + '">ES</span> / <span class="' + (LANG === "en" ? "on" : "") + '">EN</span>';
   }
   function save() {
-    const payload = { v: 1, solved: Object.assign({}, S.solved), t: Date.now() };
+    const payload = { v: 1, solved: Object.assign({}, S.solved), best: S.best, t: Date.now() };
     try { localStorage.setItem(LS, JSON.stringify(payload)); } catch (e) { /* sin almacenamiento */ }
     if (docRef) {
       const ref = docRef;
@@ -1882,9 +3006,9 @@ Object.assign(EN.q, {
       if (cw === false) { setFoot("local"); return; }
       docRef =db.doc("data/users/" + id + "/progress");
       const snap = await docRef.get();
-      const before = Object.keys(S.solved).length;
-      if (snap.exists) mergeSolved((snap.data() || {}).solved);
-      if (Object.keys(S.solved).length !== before || !snap.exists) save();
+      const before = Object.keys(S.solved).length, bestBefore = S.best;
+      if (snap.exists) { const d = snap.data() || {}; mergeSolved(d.solved); if (+d.best > S.best) S.best = +d.best; }
+      if (Object.keys(S.solved).length !== before || S.best !== bestBefore || !snap.exists) save();
       if (cw === true) setFoot("cloud");
       renderChrome();
       if (S.view === "start") renderScreen();
@@ -1894,9 +3018,10 @@ Object.assign(EN.q, {
   /* ---- piezas de interfaz ---- */
   function renderStats() {
     const inRun = S.view === "q" || S.view === "segfault";
-    $("st-lives").textContent = S.review && S.view === "q" ? "∞" : "♥".repeat(inRun ? Math.max(S.lives, 0) : MAXLIVES) + "♡".repeat(inRun ? MAXLIVES - Math.max(S.lives, 0) : 0);
+    $("st-lives").textContent = S.mode === "survival" && S.view === "q" ? "♥" : S.review && S.view === "q" ? "∞" : "♥".repeat(inRun ? Math.max(S.lives, 0) : MAXLIVES) + "♡".repeat(inRun ? MAXLIVES - Math.max(S.lives, 0) : 0);
     $("st-xp").textContent = xp() + "/" + maxXP;
     $("st-rank").textContent = rank();
+    $("modes").hidden = S.view === "start";
   }
   function renderMap() {
     $("map").innerHTML = SECTORS.map(LS_).map((s) => {
@@ -1940,19 +3065,40 @@ Object.assign(EN.q, {
     const r = $("term").getBoundingClientRect();
     if (r.top < 0) window.scrollTo(0, window.scrollY + r.top - 70);
   }
-  function render() { renderChrome(); renderScreen(); keepTermVisible(); }
+  /* la música cambia a la pista tensa durante el survival y se acelera con el avance */
+  let lastTrack = "";
+  function emitTrack() {
+    const tense = S.mode === "survival" && S.view === "q";
+    const prog = tense ? S.qi / Math.max(1, S.queue.length - 1) : 0;
+    const key = (tense ? "tense" : "calm") + ":" + prog.toFixed(3);
+    if (key === lastTrack) return;
+    lastTrack = key;
+    document.dispatchEvent(new CustomEvent("trackchange", { detail: { track: tense ? "tense" : "calm", progress: prog } }));
+  }
+  function render() { renderChrome(); renderScreen(); keepTermVisible(); emitTrack(); }
 
   /* ---- navegación ---- */
   function resetQ() { S.sel = null; S.msel = new Set(); S.fill = ""; S.checked = false; S.ok = null; S.hint = false; S.built = []; S.pool = null; }
-  function openSector(n) { if (!unlocked(n)) return; S.sector = n; S.view = "sector"; S.armed = false; render(); }
+  function openSector(n) { if (!unlocked(n)) return; S.mode = "normal"; S.sector = n; S.view = "sector"; S.armed = false; render(); }
   function startRun(n, review) {
-    S.sector = n; S.review = !!review;
+    S.mode = "normal"; S.sector = n; S.review = !!review;
     S.queue = secQ(n).filter((q) => S.review || !S.solved[q.id]);
     if (!S.queue.length) { S.review = true; S.queue = secQ(n).slice(); }
     S.qi = 0; S.done = 0; S.total = S.queue.length; S.lives = MAXLIVES;
     resetQ(); S.view = "q"; render();
   }
+  function startSurvival() {
+    S.mode = "survival"; S.review = false; S.sector = 0; S.over = false;
+    S.queue = survList(); S.qi = 0; S.done = 0; S.total = S.queue.length; S.lives = 1;
+    resetQ(); S.view = "q"; render();
+  }
   function next() {
+    if (S.mode === "survival") {
+      if (S.over) { S.view = "survover"; render(); return; }
+      S.qi++;
+      if (S.qi >= S.queue.length) { S.view = "survwin"; render(); return; }
+      resetQ(); render(); return;
+    }
     if (S.lives <= 0 && !S.review) { S.view = "segfault"; render(); return; }
     S.qi++;
     if (S.qi >= S.queue.length) S.view = S.review ? "sector" : "clear";
@@ -1991,7 +3137,7 @@ Object.assign(EN.q, {
     if (b) b.disabled = !canCheck();
   }
   function isRight(q) {
-    if (q.type === "build") return S.built.length === q.sol.length && S.built.every((p, i) => S.pool[p] === q.sol[i]);
+    if (q.type === "build") { const got = S.built.map((p) => S.pool[p]); return q.accept.some((a) => a.length === got.length && a.every((l, i) => l === got[i])); }
     if (q.type === "choice") return S.sel === q.ans;
     if (q.type === "bug") return q.ans.indexOf(S.sel) >= 0;
     if (q.type === "fill") return q.accept.some((a) => norm(a) === norm(S.fill));
@@ -2003,9 +3149,13 @@ Object.assign(EN.q, {
     const q = cur(), pool = $("pool"), built = $("built");
     if (!q || !pool || !built) return;
     const used = new Set(S.built);
+    /* referencia para marcar: el orden aceptado que más líneas comparte en su sitio */
+    const got = S.built.map((p) => S.pool[p]);
+    let ref = q.sol, bestN = -1;
+    q.accept.forEach((a) => { let n = 0; got.forEach((l, i) => { if (a[i] === l) n++; }); if (n > bestN) { bestN = n; ref = a; } });
     pool.innerHTML = S.pool.map((t, i) => '<button class="piece" data-p="' + i + '"' + (used.has(i) || S.checked ? " disabled" : "") + (used.has(i) ? ' aria-hidden="true"' : "") + ">" + (hl(t) || " ") + "</button>").join("");
     built.innerHTML = S.built.length ? S.built.map((p, k) => {
-      const cls = S.checked ? (S.pool[p] === q.sol[k] ? " right" : " wrong") : "";
+      const cls = S.checked ? (S.pool[p] === ref[k] ? " right" : " wrong") : "";
       return '<button class="line' + cls + '" data-b="' + k + '"' + (S.checked ? " disabled" : "") + '><span class="no">' + (k + 1) + "</span><span>" + (hl(S.pool[p]) || " ") + "</span></button>";
     }).join("") : '<p class="empty">' + tr("buildEmpty") + '</p>';
     pool.querySelectorAll("[data-p]").forEach((el) => el.addEventListener("click", () => { if (!S.checked) { S.built.push(+el.dataset.p); renderBuild(); const b = $("check"); if (b) b.disabled = !canCheck(); } }));
@@ -2017,7 +3167,10 @@ Object.assign(EN.q, {
     if (!canCheck()) return;
     S.checked = true;
     S.ok = isRight(q);
-    if (!S.review) {
+    if (S.mode === "survival") {
+      if (S.ok) { S.done++; if (S.qi + 1 > S.best) { S.best = S.qi + 1; save(); } }
+      else S.over = true;
+    } else if (!S.review) {
       if (S.ok) { S.solved[q.id] = true; S.done++; save(); }
       else { S.lives--; S.queue.push(S.queue[S.qi]); }
     }
@@ -2054,7 +3207,7 @@ Object.assign(EN.q, {
   function showResult(q) {
     const gain = q.st * 10;
     const deps = DEPS[q.fn];
-    let verdict = S.ok ? (S.review ? "OK" : tr("verdictOk", gain)) : (S.review ? tr("verdictNo") : S.lives <= 0 ? "SEGMENTATION FAULT" : tr("verdictLife"));
+    let verdict = S.mode === "survival" ? (S.ok ? "OK" : tr("gameOver")) : S.ok ? (S.review ? "OK" : tr("verdictOk", gain)) : (S.review ? tr("verdictNo") : S.lives <= 0 ? "SEGMENTATION FAULT" : tr("verdictLife"));
     let extra = "";
     if (!S.ok && q.type === "build") extra = '<p class="explain">' + tr("solution") + '</p><pre class="code">' + q.sol.map(hl).join("\n") + "</pre>";
     if (!S.ok && q.type === "fill") extra = '<p class="explain">' + tr("validAnswer") + '<code>' + esc(q.accept[0]) + "</code></p>";
@@ -2065,6 +3218,7 @@ Object.assign(EN.q, {
     const more = S.qi + 1 < S.queue.length;
     let nextLabel = more || (!S.ok && !S.review && S.lives > 0) ? tr("next") : tr("cont");
     if (S.lives <= 0 && !S.review) nextLabel = tr("cont");
+    if (S.mode === "survival") nextLabel = tr(S.over || !more ? "cont" : "next");
     $("res").innerHTML = '<div class="result ' + (S.ok ? "ok" : "bad") + '"><div class="verdict">' + verdict + "</div>" + extra +
       '<p class="explain">' + fmt(q.why) + "</p>" + relHtml +
       '<div class="actions"><button class="btn" id="next">' + nextLabel + '</button><span class="kbd">Enter</span></div></div>';
@@ -2091,9 +3245,14 @@ Object.assign(EN.q, {
       '<span><span class="ok">[ OK ]</span> ' + tr("bootRelations", Object.keys(DEPS).length) + "</span>" +
       '<span><span class="ok">[ OK ]</span> ' + tr("bootProgress", n, Q.length) + "</span></div>" +
       '<p class="qtext">' + tr("intro1") + "</p>" +
-      '<p class="qtext">' + tr("intro2") + "</p>" +
-      '<div class="actions"><button class="btn" id="go">' + (all ? tr("btnResult") : n ? tr("btnContinue") : tr("btnStart")) + "</button>" +
-      '<button class="btn ghost" id="reset">' + (S.armed ? tr("sure") : tr("resetProgress")) + "</button></div>";
+      '<p class="qtext">' + tr("chooseMode") + "</p>" +
+      '<div class="modes">' +
+      '<div class="mode"><h3>' + tr("questTitle") + "</h3><p>" + tr("questDesc") + '</p><p class="meta">' + tr("questMeta", n, Q.length) + "</p>" +
+      '<button class="btn" id="go">' + (all ? tr("btnResult") : n ? tr("btnContinue") : tr("btnStart")) + "</button></div>" +
+      '<div class="mode"><h3>' + tr("survTitle") + "</h3><p>" + tr("survDesc") + '</p><p class="meta">' + tr("survBest", S.best, survList().length) + "</p>" +
+      '<button class="btn" id="surv">' + tr("survBtn") + "</button></div></div>" +
+      '<div class="actions"><button class="btn ghost" id="reset">' + (S.armed ? tr("sure") : tr("resetProgress")) + "</button></div>";
+    $("surv").addEventListener("click", () => { S.view = "survintro"; render(); });
     $("go").addEventListener("click", () => { if (all) { S.view = "final"; render(); } else openSector(firstOpen()); });
     $("reset").addEventListener("click", () => {
       if (!S.armed) {
@@ -2128,8 +3287,8 @@ Object.assign(EN.q, {
 
 
   function screenQ() {
-    const q = cur(), sec = SECTORS[S.sector - 1];
-    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$ ./quest" + (S.review ? tr("reviewFlag") : "");
+    const q = cur(), sec = SECTORS[S.sector - 1] || { hex: "0x00" };
+    $("th-left").textContent = S.mode === "survival" ? tr("survCmd") : "libft@42:~/sector_" + sec.hex + "$ ./quest" + (S.review ? tr("reviewFlag") : "");
     $("th-right").textContent = Math.min(S.done + 1, S.total) + "/" + S.total + " · " + stars(q.st);
     let body = "";
     if (q.type === "bug") {
@@ -2152,13 +3311,14 @@ Object.assign(EN.q, {
       }
     }
     $("screen").innerHTML =
-      '<div class="tag">' + label(q.fn) + " · " + tr("types")[q.type] + "</div>" +
+      '<div class="tag">' + (S.mode === "survival" ? tr("survTag") + " · " : "") + label(q.fn) + " · " + tr("types")[q.type] + "</div>" +
       '<p class="qtext">' + fmt(q.q) + "</p>" + body +
-      '<div class="actions"><button class="btn" id="check" disabled>' + tr("check") + '</button><button class="btn ghost" id="hintb">' + tr("hint") + '<span class="kbd-inline"> [P]</span></button><span class="kbd">' + tr("enterToCheck") + '</span></div>' +
+      '<div class="actions"><button class="btn" id="check" disabled>' + tr("check") + '</button><button class="btn ghost" id="hintb">' + tr("hint") + '<span class="kbd-inline"> [P]</span></button><span class="kbd">' + tr("enterToCheck") + '</span>' + '<button class="btn ghost" id="quit">' + tr("quit") + "</button>" + '</div>' +
       '<div id="hint"></div><div id="res"></div>';
     if (q.type === "build") renderBuild();
     $("screen").querySelectorAll("[data-i]").forEach((el) => el.addEventListener("click", () => select(+el.dataset.i)));
     $("check").addEventListener("click", check);
+    $("quit").addEventListener("click", goModes);
     $("hintb").addEventListener("click", () => {
       S.hint = !S.hint;
       $("hint").innerHTML = S.hint ? '<p class="hint">' + fmt(q.hint) + "</p>" : "";
@@ -2203,6 +3363,45 @@ Object.assign(EN.q, {
     $("back").addEventListener("click", () => openSector(n));
   }
 
+  function goModes() { S.mode = "normal"; S.armed = false; S.view = "start"; render(); }
+
+  function screenSurvIntro() {
+    $("th-left").textContent = tr("survCmd");
+    $("th-right").textContent = tr("survTag");
+    $("screen").innerHTML =
+      '<div class="tag">' + tr("survTag") + "</div><h2>" + tr("survTitle") + "</h2>" +
+      '<div class="boot">' + tr("survRules").map((r) => '<span><span class="ok">&gt;</span> ' + esc(r) + "</span>").join("") + "</div>" +
+      '<p class="qtext">' + esc(tr("survBest", S.best, survList().length)) + "</p>" +
+      '<div class="actions"><button class="btn" id="begin">' + tr("begin") + '</button><button class="btn ghost" id="back">' + tr("back") + "</button></div>";
+    $("begin").addEventListener("click", startSurvival);
+    $("back").addEventListener("click", () => { S.view = "start"; render(); });
+  }
+
+  function screenSurvOver() {
+    const q = LQ(S.queue[S.qi]), tot = S.queue.length;
+    $("th-left").textContent = tr("survCmd");
+    $("th-right").textContent = "game over";
+    $("screen").innerHTML =
+      '<h1 style="color:var(--bad)">GAME OVER</h1>' +
+      '<p class="qtext">' + esc(tr("survOverMsg", S.qi + 1, tot, label(q.fn))) + "</p>" +
+      '<p class="qtext">' + esc(tr("survBest", S.best, tot)) + "</p>" +
+      '<div class="actions"><button class="btn" id="again">' + tr("survRestart") + '</button><button class="btn ghost" id="home">' + tr("home") + "</button></div>";
+    $("again").addEventListener("click", startSurvival);
+    $("home").addEventListener("click", () => { S.mode = "normal"; S.view = "start"; render(); });
+  }
+
+  function screenSurvWin() {
+    const tot = S.queue.length;
+    $("th-left").textContent = tr("survCmd");
+    $("th-right").textContent = tr("cleared");
+    $("screen").innerHTML =
+      '<div class="tag">' + tr("survTag") + "</div><h2>" + tr("survWinTitle") + "</h2>" +
+      '<p class="qtext">' + esc(tr("survWinMsg", tot)) + "</p>" +
+      '<div class="actions"><button class="btn" id="again">' + tr("survRestart") + '</button><button class="btn ghost" id="home">' + tr("home") + "</button></div>";
+    $("again").addEventListener("click", startSurvival);
+    $("home").addEventListener("click", () => { S.mode = "normal"; S.view = "start"; render(); });
+  }
+
   function screenFinal() {
     $("th-left").textContent = tr("finalCmd");
     $("th-right").textContent = tr("end");
@@ -2219,7 +3418,7 @@ Object.assign(EN.q, {
   let lastView = null;
   function renderScreen() {
     if (S.view !== lastView) {
-      if (window.SFX && (S.view === "clear" || S.view === "segfault" || S.view === "final")) SFX.play(S.view);
+      if (window.SFX && (S.view === "clear" || S.view === "segfault" || S.view === "final" || S.view === "survover" || S.view === "survwin")) SFX.play(S.view === "survover" ? "segfault" : S.view === "survwin" ? "final" : S.view);
       lastView = S.view;
     }
     if (S.view === "start") screenStart();
@@ -2227,6 +3426,9 @@ Object.assign(EN.q, {
     else if (S.view === "q") screenQ();
     else if (S.view === "clear") screenClear();
     else if (S.view === "segfault") screenSegfault();
+    else if (S.view === "survintro") screenSurvIntro();
+    else if (S.view === "survover") screenSurvOver();
+    else if (S.view === "survwin") screenSurvWin();
     else screenFinal();
   }
 
@@ -2252,6 +3454,7 @@ Object.assign(EN.q, {
   });
 
   /* ---- arranque ---- */
+  $("modes").addEventListener("click", goModes);
   const lb = $("lang");
   if (lb) lb.addEventListener("click", () => {
     LANG = LANG === "es" ? "en" : "es";
@@ -2275,7 +3478,9 @@ Object.assign(EN.q, {
   if (!AC) { btn.hidden = true; return; }
 
   const KEY = "libft-quest-music";
-  const BPM = 118, STEP = 60 / BPM / 4, STEPS = 128;
+  const STEPS = 128, TSTEPS = 64;
+  let tempo = 118, track = "calm";
+  const stepLen = () => 60 / tempo / 4;
   const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
   /* acordes: [nota de bajo, tres notas del acorde] en números MIDI */
@@ -2329,7 +3534,29 @@ Object.assign(EN.q, {
     o.start(t); o.stop(t + 0.16);
   }
 
+  /* pista tensa del survival: pulso grave, latido, alarma aguda y subida cromática */
+  const TL = [
+    [[0, 76, 1], [1, 75, 1], [2, 76, 1], [3, 75, 1], [4, 76, 2], [6, 71, 2], [8, 72, 1], [9, 71, 1], [10, 72, 1], [11, 71, 1], [12, 72, 2], [14, 67, 2]],
+    [[0, 76, 1], [1, 75, 1], [2, 76, 1], [3, 75, 1], [4, 76, 2], [6, 71, 2], [8, 72, 1], [9, 71, 1], [10, 72, 1], [11, 71, 1], [12, 77, 2], [14, 76, 2]],
+    [[0, 77, 1], [1, 76, 1], [2, 77, 1], [3, 76, 1], [4, 77, 2], [6, 72, 2], [8, 73, 1], [9, 72, 1], [10, 73, 1], [11, 72, 1], [12, 73, 2], [14, 68, 2]],
+    []
+  ];
+  for (let k = 0; k < 16; k++) TL[3].push([k, 64 + k, 1]);
+  function playTense(i, t) {
+    const STEP = stepLen();
+    const bar = Math.floor(i / 16), s = i % 16;
+    const root = bar === 2 ? 41 : 40;
+    if (s % 2 === 0) tone("sawtooth", mtof(root + (s % 8 === 6 ? 12 : 0)), t, STEP * 1.5, 0.15);
+    if (s === 0 || s === 3 || s === 8 || s === 11) kick(t);
+    if (s === 4 || s === 12) noise(t, 0.1, 0.13, 1200);
+    noise(t, 0.03, s % 2 ? 0.055 : 0.03, 7000);
+    TL[bar].forEach((n) => { if (n[0] === s) tone("square", mtof(n[1]), t, STEP * n[2] * 0.9, 0.07); });
+    if (bar < 3 ? (s === 0 || s === 8) : s % 2 === 0) tone("square", mtof(88), t, STEP * 0.45, 0.035);
+  }
+
   function playStep(i, t) {
+    if (track === "tense") { playTense(i, t); return; }
+    const STEP = stepLen();
     const bar = Math.floor(i / 16), s = i % 16;
     const name = bar === 7 && s >= 8 ? "E" : PROG[bar];
     const root = CH[name][0], tones = CH[name][1];
@@ -2344,8 +3571,8 @@ Object.assign(EN.q, {
   function tick() {
     while (nextTime < ctx.currentTime + 0.25) {
       playStep(step, nextTime);
-      nextTime += STEP;
-      step = (step + 1) % STEPS;
+      nextTime += stepLen();
+      step = (step + 1) % (track === "tense" ? TSTEPS : STEPS);
     }
   }
 
@@ -2404,6 +3631,17 @@ Object.assign(EN.q, {
     else if (!document.hidden && resumeAfterHidden) { resumeAfterHidden = false; start(); }
   });
 
+  /* el motor avisa del cambio de pista; la tensa va más rápido según el avance */
+  document.addEventListener("trackchange", (e) => {
+    const d = e.detail || {};
+    const changed = d.track !== track;
+    track = d.track === "tense" ? "tense" : "calm";
+    tempo = track === "tense" ? 148 + 52 * (d.progress || 0) : 118;
+    if (changed) {
+      step = 0;
+      if (ctx) nextTime = ctx.currentTime + 0.05;
+    }
+  });
   document.addEventListener("langchange", paint);
   paint();
   let saved = null;

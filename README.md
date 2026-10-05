@@ -11,6 +11,8 @@ Hecho por **coscosgram**.
 - Tres vidas por intento de sector. Un fallo cuesta una vida y la pregunta vuelve más tarde.
 - Un sector se abre al completar el anterior. Los superados se pueden repasar sin límite de vidas.
 - El inventario muestra las funciones dominadas y de cuáles depende cada una.
+- Modo survival: construyes las 43 funciones de la libft, de la más fácil a la más difícil, ordenando piezas de código. Un solo fallo y vuelves a empezar; se guarda tu récord. Antes de empezar se explican las reglas y la música pasa a una pista tensa que se acelera según avanzas.
+- Dos modos, que se eligen en la pantalla de inicio: quest (los seis sectores) y survival. El botón ⌂ MODOS de la barra superior, o SALIR en cada pregunta, vuelve a esa pantalla.
 - Español e inglés: el botón ES / EN de la barra superior cambia el idioma al instante y se recuerda.
 - Música chiptune original, generada en el propio navegador. Se activa con el botón ♪ MÚSICA de la barra superior.
 - Efectos de sonido 8 bits en botones, aciertos, fallos y fin de sector (botón ◆ SONIDOS para silenciarlos).
@@ -41,6 +43,8 @@ Made by **coscosgram**.
 - Three lives per sector attempt. A mistake costs one life and the question comes back later.
 - A sector unlocks once the previous one is cleared. Cleared sectors can be reviewed without any life limit.
 - The inventory shows the functions you have mastered and which ones each depends on.
+- Survival mode: you build all 43 libft functions, from easiest to hardest, by ordering code pieces. A single mistake and you start over; your best run is saved. The rules are explained before you start, and the music switches to a tense track that speeds up as you advance.
+- Two modes, chosen on the start screen: quest (the six sectors) and survival. The ⌂ MODES button in the top bar, or EXIT on each question, takes you back to that screen.
 - Spanish and English: the ES / EN button in the top bar switches language instantly and is remembered.
 - Original chiptune music, generated in the browser itself. Turn it on with the ♪ MUSIC button in the top bar.
 - 8-bit sound effects on buttons, correct and wrong answers and sector clears (the ◆ SOUNDS button mutes them).
