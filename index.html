@@ -58,6 +58,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: none; border: 1px solid var(--line); color: var(--dim); padding: 0 10px; font-size: 12px; line-height: 1.7;
   text-transform: uppercase; letter-spacing: .1em; font-weight: 500;
 }
+.mbtn span.on { color: var(--fg); font-weight: 600; }
 .mbtn:hover { border-color: var(--fg); color: var(--fg); }
 .mbtn[aria-pressed="true"] { border-color: var(--fg); color: var(--fg); }
 
@@ -231,9 +232,10 @@ pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px s
   <header class="titlebar">
     <div class="brand">LIBFT_QUEST<small>v1.0 · by coscosgram</small></div>
     <div class="stats" aria-label="Estado">
-      <span class="lives">Vidas <b id="st-lives">♥♥♥</b></span>
+      <span class="lives"><span data-i18n="lives">Vidas</span> <b id="st-lives">♥♥♥</b></span>
       <span>XP <b id="st-xp">0</b></span>
-      <span>Rango <b id="st-rank">PISCINERO</b></span>
+      <span><span data-i18n="rank">Rango</span> <b id="st-rank">PISCINERO</b></span>
+      <button class="mbtn" id="lang" type="button" aria-label="Idioma / Language" title="Idioma / Language">ES / EN</button>
       <button class="mbtn" id="sfx" type="button" aria-pressed="true">◆ SONIDOS: SÍ</button>
       <button class="mbtn" id="music" type="button" aria-pressed="false">♪ MÚSICA: NO</button>
     </div>
@@ -251,7 +253,7 @@ pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px s
     </section>
 
     <aside class="inv" aria-label="Inventario de funciones">
-      <div class="inv-head"><span>Inventario</span><span id="inv-count">0/0</span></div>
+      <div class="inv-head"><span data-i18n="inventory">Inventario</span><span id="inv-count">0/0</span></div>
       <div class="inv-body">
         <div id="inv-groups"></div>
         <div class="depinfo" id="depinfo">Pulsa una función para ver de cuáles depende.</div>
@@ -260,7 +262,7 @@ pre.code .b { color: var(--fg); background: var(--panel-2); border-bottom: 2px s
   </div>
 
   <p class="foot" id="foot">Tu progreso se guarda sólo en este navegador.</p>
-  <p class="foot">Hecho por coscosgram · libft_quest.exe</p>
+  <p class="foot" data-i18n="credit">Hecho por coscosgram · libft_quest.exe</p>
 </div>
 <script>
 /* ===== Datos: sectores, dependencias y preguntas (1/2) ===== */
@@ -1207,6 +1209,571 @@ Q.push(
 );
 /* orden estable por sector y dificultad: las nuevas se colocan tras las existentes de su misma dificultad */
 Q.sort((a, b) => a.s - b.s || a.st - b.st);
+
+/* ===== Idiomas (es / en) ===== */
+const EN = {
+  sectors: [
+    { name: "CHARACTERS", blurb: "ctype and strlen: the smallest building blocks." },
+    { name: "MEMORY", blurb: "memset, memcpy and friends: bytes, pointers and overlap." },
+    { name: "STRINGS", blurb: "Comparing, copying and searching inside strings." },
+    { name: "HEAP", blurb: "malloc enters the scene: functions that build on others." },
+    { name: "FD", blurb: "Writing to file descriptors." },
+    { name: "LISTS", blurb: "Linked lists: the bonus that ties everything together." }
+  ],
+  q: {}
+};
+const LANG_KEY = "libft-quest-lang";
+let LANG = "es";
+try {
+  const sv = localStorage.getItem(LANG_KEY);
+  if (sv === "en" || sv === "es") LANG = sv;
+  else if (!/^es/i.test(navigator.language || "es")) LANG = "en";
+} catch (e) { /* sin almacenamiento */ }
+
+const T = {
+  es: {
+    lives: "Vidas", rank: "Rango", inventory: "Inventario", credit: "Hecho por coscosgram · libft_quest.exe",
+    depHint: "Pulsa una función para ver de cuáles depende y quién la usa.",
+    footLocal: "Tu progreso se guarda sólo en este navegador.",
+    footCloud: "Tu progreso se guarda en tu cuenta y se conserva entre sesiones.",
+    ranks: ["PISCINERO", "TOPO", "BECARIO", "NORMINETTE", "LIBFT MASTER"],
+    lockedTitle: "Completa el sector anterior para abrirlo",
+    uses: "usa: ", usesNone: "no necesita otras funciones tuyas.", usedBy: "La usan: ",
+    verdictOk: (g) => "OK · +" + g + " XP", verdictNo: "NO ES ESA", verdictLife: "ERROR · −1 VIDA",
+    solution: "Solución:", validAnswer: "Respuesta válida: ", usesChip: " usa:", related: "Relacionadas:",
+    next: "SIGUIENTE ▸", cont: "CONTINUAR ▸",
+    buildEmpty: "Toca las piezas de arriba para colocarlas aquí, en orden. Toca una línea colocada para quitarla.",
+    pieces: "Piezas", yourFn: "Tu función",
+    startTag: "inicio",
+    bootSectors: (n) => n + " sectores cargados",
+    bootQuestions: (n) => n + " preguntas, de ★ a ★★★★",
+    bootRelations: (n) => n + " relaciones entre funciones mapeadas",
+    bootProgress: (a, b) => "progreso: " + a + " de " + b + " resueltas",
+    intro1: "Repasa tu libft con retos de dificultad creciente: elegir la respuesta, completar código, encontrar el error, ordenar piezas y decidir qué funciones reutilizar para construir otras.",
+    intro2: "Cada intento de sector te da 3 vidas. Un fallo cuesta una vida y esa pregunta vuelve más tarde. Completa un sector para abrir el siguiente; los superados se pueden repasar sin límite.",
+    btnResult: "VER RESULTADO", btnContinue: "CONTINUAR", btnStart: "INICIAR",
+    sure: "¿SEGURO? PULSA DE NUEVO", resetProgress: "Borrar progreso",
+    solvedCount: (d, t) => d + "/" + t + " resueltas",
+    sectorFns: "Funciones del sector:",
+    status: (t, lo, hi, done, left) => t + " preguntas · dificultad " + lo + " a " + hi + " · " + (done ? "completado" : left + " por resolver"),
+    review: "REPASAR SECTOR", nextSector: "SIGUIENTE SECTOR", enter: "ENTRAR AL SECTOR",
+    types: { choice: "elige una respuesta", multi: "marca todas las correctas", fill: "completa el código", build: "ordena el código", bug: "encuentra la línea con el error" },
+    reviewFlag: " --repaso", codeLines: "Líneas de código", yourAnswer: "Tu respuesta:",
+    check: "COMPROBAR", hint: "PISTA", enterToCheck: "Enter para comprobar",
+    cleared: "completado", sectorCleared: "SECTOR COMPLETADO",
+    clearQ: (n, m) => n + " de " + m + " preguntas resueltas",
+    clearXp: (x, m, r) => "XP total: " + x + " de " + m + " · rango " + r,
+    mastered: "Funciones dominadas:", viewResultArrow: "VER RESULTADO ▸", nextSectorArrow: "SIGUIENTE SECTOR ▸", reviewThis: "Repasar este sector",
+    segP1: (a, b) => "(core dumped) Te has quedado sin vidas. Llevas " + a + " de " + b + " preguntas resueltas en este sector y eso se conserva.",
+    segP2: "Las que fallaste siguen pendientes. Lee otra vez las explicaciones y vuelve a entrar.",
+    retry: "REINTENTAR SECTOR", backSector: "Volver al sector",
+    finalCmd: "libft@42:~$ ./libft_quest --resultado", end: "fin", resultTag: "RESULTADO", rankIs: "RANGO: ",
+    finalAll: "Has superado todos los sectores. Repasa los que más te cuesten hasta que la relación entre funciones te salga sola.",
+    finalSome: "Aún te quedan preguntas por resolver. Vuelve a los sectores abiertos para completarlos.",
+    home: "VOLVER AL INICIO",
+    music: (on) => "♪ MÚSICA: " + (on ? "SÍ" : "NO"), sfx: (on) => "◆ SONIDOS: " + (on ? "SÍ" : "NO")
+  },
+  en: {
+    lives: "Lives", rank: "Rank", inventory: "Inventory", credit: "Made by coscosgram · libft_quest.exe",
+    depHint: "Tap a function to see what it depends on and what uses it.",
+    footLocal: "Your progress is saved only in this browser.",
+    footCloud: "Your progress is saved to your account and kept between sessions.",
+    ranks: ["PISCINER", "MOLE", "INTERN", "NORMINETTE", "LIBFT MASTER"],
+    lockedTitle: "Clear the previous sector to unlock it",
+    uses: "uses: ", usesNone: "needs none of your other functions.", usedBy: "Used by: ",
+    verdictOk: (g) => "OK · +" + g + " XP", verdictNo: "NOT THAT ONE", verdictLife: "ERROR · −1 LIFE",
+    solution: "Solution:", validAnswer: "Valid answer: ", usesChip: " uses:", related: "Related:",
+    next: "NEXT ▸", cont: "CONTINUE ▸",
+    buildEmpty: "Tap the pieces above to place them here, in order. Tap a placed line to remove it.",
+    pieces: "Pieces", yourFn: "Your function",
+    startTag: "start",
+    bootSectors: (n) => n + " sectors loaded",
+    bootQuestions: (n) => n + " questions, from ★ to ★★★★",
+    bootRelations: (n) => n + " function relationships mapped",
+    bootProgress: (a, b) => "progress: " + a + " of " + b + " solved",
+    intro1: "Review your libft with challenges of growing difficulty: pick the answer, complete code, spot the bug, order code pieces and decide which functions to reuse to build others.",
+    intro2: "Each sector attempt gives you 3 lives. A mistake costs one life and that question comes back later. Clear a sector to unlock the next one; cleared ones can be reviewed without limits.",
+    btnResult: "VIEW RESULT", btnContinue: "CONTINUE", btnStart: "START",
+    sure: "SURE? PRESS AGAIN", resetProgress: "Reset progress",
+    solvedCount: (d, t) => d + "/" + t + " solved",
+    sectorFns: "Sector functions:",
+    status: (t, lo, hi, done, left) => t + " questions · difficulty " + lo + " to " + hi + " · " + (done ? "cleared" : left + " to go"),
+    review: "REVIEW SECTOR", nextSector: "NEXT SECTOR", enter: "ENTER SECTOR",
+    types: { choice: "pick an answer", multi: "select all that apply", fill: "complete the code", build: "order the code", bug: "find the buggy line" },
+    reviewFlag: " --review", codeLines: "Code lines", yourAnswer: "Your answer:",
+    check: "CHECK", hint: "HINT", enterToCheck: "Enter to check",
+    cleared: "cleared", sectorCleared: "SECTOR CLEARED",
+    clearQ: (n, m) => n + " of " + m + " questions solved",
+    clearXp: (x, m, r) => "Total XP: " + x + " of " + m + " · rank " + r,
+    mastered: "Mastered functions:", viewResultArrow: "VIEW RESULT ▸", nextSectorArrow: "NEXT SECTOR ▸", reviewThis: "Review this sector",
+    segP1: (a, b) => "(core dumped) You ran out of lives. You have " + a + " of " + b + " questions solved in this sector, and that is kept.",
+    segP2: "The ones you missed are still pending. Read the explanations again and go back in.",
+    retry: "RETRY SECTOR", backSector: "Back to sector",
+    finalCmd: "libft@42:~$ ./libft_quest --result", end: "end", resultTag: "RESULT", rankIs: "RANK: ",
+    finalAll: "You cleared every sector. Review the ones you find hardest until the relationships between functions come naturally.",
+    finalSome: "You still have unsolved questions. Go back to the open sectors to finish them.",
+    home: "BACK TO START",
+    music: (on) => "♪ MUSIC: " + (on ? "ON" : "OFF"), sfx: (on) => "◆ SOUNDS: " + (on ? "ON" : "OFF")
+  }
+};
+/* tr("clave", ...args): texto en el idioma activo (con respaldo en español) */
+function tr(k) {
+  const v = T[LANG][k] !== undefined ? T[LANG][k] : T.es[k];
+  return typeof v === "function" ? v.apply(null, Array.prototype.slice.call(arguments, 1)) : v;
+}
+/* versiones localizadas de una pregunta y de un sector */
+const LQ = (q) => (q && LANG === "en" && EN.q[q.id] ? Object.assign({}, q, EN.q[q.id]) : q);
+const LS_ = (s) => (LANG === "en" && EN.sectors[s.n - 1] ? Object.assign({}, s, EN.sectors[s.n - 1]) : s);
+Object.assign(EN.q, {
+  "s1q1": {
+    q: "Which values of `c` make `ft_isdigit(c)` return 1?",
+    opts: [
+      "ASCII codes 48 to 57 ('0' to '9')",
+      "ASCII codes 0 to 9",
+      "ASCII codes 49 to 58",
+      "Any value below 128"
+    ],
+    why: "ASCII digits start at '0' (48) and end at '9' (57). Compare against character literals, not magic numbers: `c >= '0' && c <= '9'`. Per the subject, it returns 1 for a digit and 0 otherwise. The real libc only guarantees \"non-zero\" (glibc returns 2048 in `isdigit`), but your libft must follow what the subject asks for.",
+    hint: "The character '0' isn't worth 0, it's worth 48."
+  },
+  "s1q2": {
+    q: "Complete the comparison so that only lowercase letters get converted.",
+    why: "Lowercase letters go from 'a' (97) to 'z' (122), and the distance to uppercase is 32. Writing `c - 'a' + 'A'` is more readable and doesn't make you remember the 32.",
+    hint: "It's the last letter of the English alphabet."
+  },
+  "s1q3": {
+    q: "A character is alphanumeric if it is a letter or a digit. Which of your own functions would you reuse to write `ft_isalnum` in one line?",
+    why: "`return (ft_isalpha(c) || ft_isdigit(c));` This is your first relationship between functions: a new function built from two you already master.",
+    hint: "Think about the two conditions the character can satisfy."
+  },
+  "s1q4": {
+    q: "This `ft_strlen` returns garbage every now and then. Which line contains the bug?",
+    why: "`i` is not initialized: it holds whatever was on the stack. You need `i = 0;` before the loop. The Norm doesn't allow initializing in the declaration itself, so it goes on a separate line.",
+    hint: "Look at what value `i` has the first time `s[i]` is evaluated."
+  },
+  "s1q5": {
+    q: "What range does a printable character fall in according to `ft_isprint`?",
+    opts: [
+      "32 to 126, space included",
+      "33 to 126, space excluded",
+      "32 to 127",
+      "0 to 127"
+    ],
+    why: "Printable characters go from space (32) to the tilde ~ (126). 127 is DEL, a control character. The range 0 to 127 belongs to `ft_isascii`.",
+    hint: "A space looks like a gap, but it does take up room when printed."
+  },
+  "s1q6": {
+    q: "What does `ft_strlen(\"42\\0Madrid\")` return?",
+    opts: ["2", "8", "9", "Depends on the compiler"],
+    why: "`ft_strlen` counts up to the first null character (`\\0`), which here sits at position 2. What follows is still in memory, but as far as C is concerned it's no longer part of the string.",
+    hint: "Where does a C string end?"
+  },
+  "s1q7": {
+    q: "Why does `ft_toupper` take an `int` and not a `char`?",
+    opts: [
+      "To support `EOF` (-1) in addition to any unsigned char value",
+      "Because a `char` can't store letters",
+      "To make the function faster",
+      "Because the Norm requires it"
+    ],
+    why: "The `ctype.h` functions take an `int` that must be `EOF` or a value representable as `unsigned char`. That way they can be chained with `getc` without losing end-of-file. Your `ft_toupper` must return that `int` untouched when there's no conversion.",
+    hint: "Think about the value `getchar` returns when it reaches the end."
+  },
+  "s1q8": {
+    q: "Build `ft_strlen` by putting the pieces in order. Two are extra.",
+    why: "Declare `i`, initialize it to 0, advance while `s[i]` is not `'\\0'`, and return `i`, which is already the length without counting the terminator. `return (i + 1)` would count the `'\\0'`.",
+    hint: "First the declaration, then the initialization, then the loop, and the return at the end."
+  },
+  "s2q1": {
+    q: "`ft_memset` fills bytes. What local pointer do you need to write byte by byte over a `void *s`?",
+    opts: [
+      "`unsigned char *`",
+      "`int *`",
+      "`char **`",
+      "None: `s[i] = c` works on a `void *`"
+    ],
+    why: "A `void *` can't be indexed or dereferenced because it has no element size. You cast it to `unsigned char *` to advance one byte at a time. The value `c` is also interpreted as an `unsigned char`.",
+    hint: "You need a type that is exactly one byte wide."
+  },
+  "s2q2": {
+    q: "`ft_bzero(s, n)` zeroes `n` bytes. How would you write it by reusing a function you already have?",
+    why: "`bzero` is a `memset` with the value fixed at 0. It's the shortest way to see how one function builds on another.",
+    hint: "Which function fills a region with a value?"
+  },
+  "s2q3": {
+    q: "Fill in the blank: which pointer is each byte read from?",
+    why: "You read from `s` (source) and write to `d` (destination). You return `dst`, the original pointer, just as the subject requires.",
+    hint: "You write to `d`, so you read from the other one."
+  },
+  "s2q4": {
+    q: "This copy writes one byte too many. Which line has the error?",
+    why: "With `n` bytes, the valid indices go from 0 to n-1. With `<=` you copy `n + 1` bytes and overflow the destination. The correct condition is `i < n`.",
+    hint: "Count how many iterations the loop runs if n is 3."
+  },
+  "s2q5": {
+    q: "In `ft_memmove`, `dst` is ahead of `src` and the regions overlap. Which direction do you copy in?",
+    opts: [
+      "Backwards, from the last byte to the first",
+      "Forwards, from the first byte to the last",
+      "It doesn't matter, the result is the same",
+      "It can't be solved without a heap buffer"
+    ],
+    why: "If you copy forwards, you overwrite bytes of `src` you haven't read yet. Copying from the end, each byte is read before it gets overwritten.",
+    hint: "Look at which source bytes get overwritten first."
+  },
+  "s2q6": {
+    q: "With `char buf[] = \"abcdef\";`, what does `buf` contain after `ft_memmove(buf + 2, buf, 4)`?",
+    why: "Copying backwards: `buf[5] = buf[3]` (d), `buf[4] = buf[2]` (c), `buf[3] = buf[1]` (b) and `buf[2] = buf[0]` (a). Result: ababcd. A naive forward `memcpy` would give ababab.",
+    hint: "Write the six indices down on paper and copy from the end."
+  },
+  "s2q7": {
+    q: "In which cases can you safely copy forwards, as `ft_memcpy` would?",
+    opts: [
+      "`dst < src`",
+      "`dst == src`",
+      "`dst > src` and the regions overlap",
+      "`dst > src` and the regions don't overlap"
+    ],
+    why: "Copying forwards only fails when the destination starts inside the source and ahead of it. That's why a typical `ft_memmove` is: if `dst < src`, copy like `memcpy`; otherwise, copy backwards.",
+    hint: "There are three safe cases and one dangerous one."
+  },
+  "s2q8": {
+    q: "What sign does `ft_memcmp(\"\\200\", \"\\0\", 1)` return?",
+    opts: ["Positive", "Negative", "Zero", "Undefined"],
+    why: "`memcmp` compares as `unsigned char`: 0x80 (128) is greater than 0. If you compared as signed `char`, 0x80 would be -128 and the result would be negative. Always cast with `(unsigned char)`.",
+    hint: "\\200 in octal is 128."
+  },
+  "s2q9": {
+    q: "Build `ft_memmove` with the pieces. Three are extra.",
+    why: "If `dst` comes before `src`, copying forwards (with `ft_memcpy`) never overwrites data that is still waiting to be read. If it comes after, you must copy from the end backwards: `i = len` and `while (i-- > 0)`.",
+    hint: "If dst < src you can copy normally. Otherwise, start from the last byte."
+  }
+});
+Object.assign(EN.q, {
+  "s3q1": {
+    q: "With `char *s = \"hola\";`, what does `ft_strchr(s, 0)` return?",
+    opts: [
+      "A pointer to the final `\\0`, i.e. `s + 4`",
+      "NULL, because 0 is not a character of the string",
+      "A pointer to `s`",
+      "It depends on the system"
+    ],
+    why: "For `strchr` the terminator is part of the string: if you search for `'\\0'`, it returns its address. It's the case people forget most and the one testers check most.",
+    hint: "How far does the function scan before giving up?"
+  },
+  "s3q2": {
+    q: "Fill in the return value: which string gets subtracted from the byte of `s1`?",
+    why: "You subtract the byte of `s2` from the byte of `s1`, both as `unsigned char`. The loop stops when it reaches `n` or when both strings have ended.",
+    hint: "The other string in the comparison."
+  },
+  "s3q3": {
+    q: "What does `ft_strlcpy(dst, src, size)` return?",
+    opts: [
+      "The length of `src`, whether it fit or not",
+      "The number of bytes copied",
+      "The `dst` pointer",
+      "The length of `dst` after copying"
+    ],
+    why: "It returns `ft_strlen(src)`: the length of the string it tried to create. That way the caller detects truncation by checking `ret >= size`.",
+    hint: "It's like the function telling you what it wanted to write."
+  },
+  "s3q4": {
+    q: "`ft_strlcat` needs to measure and copy. Which of your functions would you use?",
+    why: "You measure `dst` and `src` with `ft_strlen`, and copy whatever fits with `ft_strlcpy`, starting at the end of `dst`. Many string functions are combinations of these two.",
+    hint: "One measures, the other copies."
+  },
+  "s3q5": {
+    q: "`dst` is an 8-byte buffer holding \"ab\" and `src` is \"cdefghij\". What does `ft_strlcat(dst, src, 8)` return?",
+    why: "It returns `ft_strlen(dst) + ft_strlen(src)` = 2 + 8 = 10, as long as `size > ft_strlen(dst)`. `dst` has room for 7 characters plus the null, so it ends up as \"abcdefg\". Since 10 >= 8, you know truncation happened.",
+    hint: "The return value is the length the full result would have."
+  },
+  "s3q6": {
+    q: "`ft_atoi(\"\\t 42\")` returns 0. Which line has the bug?",
+    why: "`isspace` counts as whitespace: ' ', \\t, \\n, \\v, \\f and \\r. Comparing only with ' ' leaves out the other five. The correct check is `nptr[i] == ' ' || (nptr[i] >= 9 && nptr[i] <= 13)`.",
+    hint: "A tab isn't a space, but it is whitespace."
+  },
+  "s3q7": {
+    q: "What does `ft_strnstr(\"abc\", \"\", 0)` return?",
+    opts: [
+      "A pointer to \"abc\" (the `haystack`)",
+      "NULL, because `len` is 0",
+      "A pointer to the end of the string",
+      "It's undefined behavior"
+    ],
+    why: "If `needle` is empty, the function returns `haystack` even when `len` is 0. It's the first case you check, before entering any loop.",
+    hint: "An empty string always appears at the start of any other string."
+  },
+  "s3q8": {
+    q: "`ft_strnstr` looks for a substring in the first `len` bytes. Which of your functions help?",
+    why: "You measure `needle` with `ft_strlen` and, at each candidate position, compare with `ft_strncmp(&haystack[i], needle, needle_len)`. The loop keeps going while `i + needle_len <= len`.",
+    hint: "You need the length of what you're searching for and a way to compare."
+  },
+  "s3q9": {
+    q: "Build `ft_strlcpy`. Two pieces are left over.",
+    why: "At most `size - 1` characters are copied to leave room for the `'\\0'`, which is only written if `size > 0`. Then it keeps counting up to the end of `src`, because the function returns the length of `src`, not what was copied.",
+    hint: "Copy at most size - 1 characters. The return value is the length of the whole src."
+  },
+  "s4q1": {
+    q: "Fill in the memory allocation: how many extra bytes does the copy need?",
+    why: "You allocate `len + 1` bytes: the last one is for the `\\0`. Forgetting it is the classic mistake and causes out-of-bounds reads later on. Also note that `ft_memcpy(copy, s, len + 1)` copies the null. It's a function built from `ft_strlen` and `ft_memcpy`.",
+    hint: "Think about the character that closes every C string."
+  },
+  "s4q2": {
+    q: "Which combination implements `ft_calloc(count, size)`?",
+    opts: [
+      "`malloc(count * size)` and then `ft_bzero` on that block",
+      "`malloc(count)` and then `ft_memset(p, size, count)`",
+      "`ft_strdup` of an empty string, `count` times",
+      "Just `malloc`, because the memory already comes zeroed"
+    ],
+    why: "`calloc` is `malloc` plus zeroing everything. Here you reuse `ft_bzero` (and underneath, `ft_memset`). The memory `malloc` hands you is not initialized.",
+    hint: "Which function from the memory sector sets bytes to zero?"
+  },
+  "s4q3": {
+    q: "What is the difference between `ft_strmapi` and `ft_striteri`?",
+    opts: [
+      "`strmapi` returns a new string by applying `f(i, c)`; `striteri` modifies the original with `f(i, &c)`",
+      "`strmapi` modifies the original and `striteri` creates a new one",
+      "None, they're synonyms",
+      "`striteri` needs `malloc` and `strmapi` doesn't"
+    ],
+    why: "`ft_strmapi` applies `char f(unsigned int, char)` and stores each result in a new string, so it needs `malloc`. `ft_striteri` applies `void f(unsigned int, char *)` on the string itself and allocates nothing.",
+    hint: "Look at the return type of each function."
+  },
+  "s4q4": {
+    q: "With `ft_calloc(count, size)`, the product `count * size` can overflow `size_t`. What do you do before multiplying?",
+    opts: [
+      "Check `size != 0 && count > SIZE_MAX / size` and return NULL",
+      "Nothing: the overflow fixes itself",
+      "Multiply using `int` instead of `size_t`",
+      "Call `ft_strlen` on `count`"
+    ],
+    why: "If the product overflows, `malloc` would receive a small size and your code would write outside the block. Dividing instead of multiplying detects the problem without suffering it. The real `calloc` returns NULL in that case.",
+    hint: "A comparison using a division can't overflow."
+  },
+  "s4q5": {
+    q: "`ft_strjoin(s1, s2)` builds a new string. Which of your functions do you combine?",
+    why: "You measure both strings with `ft_strlen`, allocate `len1 + len2 + 1` with `malloc`, copy `s1` with `ft_strlcpy` and append `s2` with `ft_strlcat`. This is where doing the previous sector properly pays off.",
+    hint: "Measure, copy and concatenate."
+  },
+  "s4q6": {
+    q: "`ft_strjoin(\"ab\", \"cd\")` works in your tests, but valgrind warns about an invalid write. Which line has the bug?",
+    why: "The terminator byte is missing: you must allocate `len + 1`. With `malloc(len)` the `\\0` is written outside the block, which is why valgrind flags it as an invalid write even though the program seems to work.",
+    hint: "Count the bytes \"abcd\" takes up with its terminator."
+  },
+  "s4q7": {
+    q: "What must `ft_substr(s, start, len)` return when `start` is greater than or equal to `ft_strlen(s)`?",
+    opts: [
+      "An empty string allocated with `malloc`",
+      "NULL",
+      "`s` unchanged",
+      "A string of `len` spaces"
+    ],
+    why: "The subject doesn't treat it as an error: the result is an empty string (a `malloc(1)` holding a `\\0`). NULL is reserved for when `malloc` fails. Also, `len` is clamped to what actually remains from `start`.",
+    hint: "There's nothing to copy, but the function still returns a valid string."
+  },
+  "s4q8": {
+    q: "`ft_strtrim(s1, set)` removes from the start and the end the characters that are in `set`. Which of your functions fit?",
+    why: "With `ft_strchr(set, s1[i])` you decide whether a character gets trimmed; with `ft_strlen` you place the index of the end; and once you know `start` and `end`, `ft_substr(s1, start, end - start)` builds the result. Three functions of yours and no new copy logic.",
+    hint: "One membership question, one length, one extraction."
+  },
+  "s4q9": {
+    q: "How many pointers does the array returned by `ft_split(\"  hola  mundo \", ' ')` have?",
+    opts: [
+      "3: two words and a final NULL",
+      "2: just the two words",
+      "5: one per separator",
+      "4: two words and two empty strings"
+    ],
+    why: "Repeated separators don't produce empty strings. The words are \"hola\" and \"mundo\", and the array ends with NULL so whoever uses it knows where it ends: 2 + 1 = 3 pointers.",
+    hint: "The array of strings needs a terminator too."
+  },
+  "s4q10": {
+    q: "In `ft_split`, `malloc` fails while allocating the third word. What do you do?",
+    opts: [
+      "Free the previous two words and the array, and return NULL",
+      "Return the array with the two words you already have",
+      "Skip that word and carry on with the next one",
+      "Call `exit(1)`"
+    ],
+    why: "If you return an incomplete result, the caller doesn't find out about the failure; if you just return NULL, you leak memory. You walk through what's already allocated with `free`, free the array, and only then return NULL. It's usually a separate helper function.",
+    hint: "There are three things to clean up before leaving."
+  },
+  "s4q11": {
+    q: "`ft_itoa(-2147483648)` fails because `-n` overflows an `int`. Which type do you store `n` in before flipping its sign?",
+    code: `char    *ft_itoa(int n)
+{
+    ____    nb;
+
+    nb = n;
+    if (nb < 0)
+        nb = -nb;
+    /* ... count digits, malloc, fill in ... */
+}`,
+    why: "`INT_MIN` is -2147483648 but `INT_MAX` is only 2147483647, so `-n` doesn't fit in an `int`. Storing `n` in a `long` (64 bits on 42's machines) saves you from handling that case separately. `long long` works too.",
+    hint: "An integer with more bits than `int`."
+  },
+  "s4q12": {
+    q: "Build `ft_strjoin` from the pieces. Two are left over.",
+    why: "You must allocate `len1 + len2 + 1` bytes (the `+ 1` is the `'\\0'`), check the `malloc`, copy `s1` with `ft_strlcpy` and append `s2` with `ft_strlcat`. Both receive the total size of the buffer, not the size of the part being added.",
+    hint: "First lengths, then malloc with the + 1, the check, and finally the two copies."
+  }
+});
+Object.assign(EN.q, {
+  "s5q1": {
+    q: "Complete the call: how many bytes does this function write?",
+    why: "You write one byte, taken from the address of `c`. This is the base piece: `write` is the only libc function you will need in the whole sector.",
+    hint: "A `char` takes exactly one byte."
+  },
+  "s5q2": {
+    q: "Which descriptor do you pass so your function writes to the error output?",
+    opts: ["2", "0", "1", "3"],
+    why: "0 is standard input, 1 is standard output and 2 is standard error. Your functions don't choose the destination: whoever calls them decides through `fd`.",
+    hint: "They are the first three descriptors of any process."
+  },
+  "s5q3": {
+    q: "Fill in the third argument of `write`: which function of yours gives the length?",
+    why: "A single `write` with the full length is more efficient than one per character. The `!s` check avoids dereferencing NULL, which is worth guarding here because this is not a libc function.",
+    hint: "A function from the first sector."
+  },
+  "s5q4": {
+    q: "`ft_putendl_fd(s, fd)` writes `s` followed by a newline. How do you build it with what you already have?",
+    opts: [
+      "`ft_putstr_fd(s, fd);` and then `ft_putchar_fd('\\n', fd);`",
+      "`ft_putnbr_fd(s, fd);` twice",
+      "`ft_itoa(s)` and then `ft_putstr_fd` of the result",
+      "`write(fd, s, 1);`"
+    ],
+    why: "You reuse the two previous functions and never touch `write` again. The less new code, the fewer places to make mistakes.",
+    hint: "One function for the string and another for the final character."
+  },
+  "s5q5": {
+    q: "You want `ft_putnbr_fd` to avoid `malloc`. Which function of yours is enough?",
+    opts: [
+      "`ft_putchar_fd`, calling it digit by digit",
+      "`ft_itoa`, because it already converts the number",
+      "`ft_strdup`",
+      "`ft_calloc`"
+    ],
+    why: "With `ft_itoa` you would have to allocate, print and free. With recursion and `ft_putchar_fd` you print each digit without allocating anything: first `ft_putnbr_fd(n / 10)` and then `ft_putchar_fd(n % 10 + '0')`.",
+    hint: "One digit at a time."
+  },
+  "s5q6": {
+    q: "What problem does `ft_putnbr_fd(-2147483648, fd)` cause if you do `n = -n` with an `int`?",
+    opts: [
+      "`-n` doesn't fit in an `int`: overflow",
+      "It prints an extra zero",
+      "Nothing, `-n` is 2147483648",
+      "`write` rejects negative numbers"
+    ],
+    why: "The largest `int` is 2147483647, so 2147483648 doesn't fit. You solve it with a special case for the minimum or by storing `n` in a `long`: it's the same problem as in `ft_itoa`.",
+    hint: "Compare the absolute value of the minimum with that of the maximum."
+  },
+  "s5q7": {
+    q: "This version prints 123 as 321. Which line has the wrong order?",
+    why: "The units digit is printed before the others, which is why the output comes out reversed. The recursive call with `nb / 10` must go first and `ft_putchar_fd(nb % 10 + '0')` after it: printing on the way back from the recursion is what puts the digits in order.",
+    hint: "Which digit does this version print first?"
+  },
+  "s5q8": {
+    q: "Build `ft_putnbr_fd` from the pieces. Two are extra.",
+    why: "`n` is copied into a `long` so that `-nb` doesn't overflow with `INT_MIN`. The sign is printed, then a recursive call with `nb / 10` is made while at least two digits remain, and finally the last digit is printed. With `nb > 10`, the number 10 would be printed wrongly.",
+    hint: "Use a long for the INT_MIN case. The recursion prints the most significant digits first."
+  },
+  "s6q1": {
+    q: "Fill in the last field of the new node.",
+    why: "A newly created node points to nobody: `next` must be NULL. If you leave it unassigned, it holds garbage and any traversal of the list would end up on an invalid pointer.",
+    hint: "The end-of-list marker."
+  },
+  "s6q2": {
+    q: "In `ft_lstadd_front(&lst, new)`, which order is correct?",
+    opts: [
+      "`new->next = *lst;` and then `*lst = new;`",
+      "`*lst = new;` and then `new->next = *lst;`",
+      "Only `*lst = new;`",
+      "`new->next = NULL;` and then `*lst = new;`"
+    ],
+    why: "First you hook the new node onto the old head; then you move the head. If you swap the order, `new->next` ends up pointing to itself and you lose the rest of the list.",
+    hint: "Don't move the head until you have saved where it was."
+  },
+  "s6q3": {
+    q: "`ft_lstsize` always returns one element too many. Which line has the bug?",
+    why: "The counter must start at 0, because inside the loop you already count every node. With an empty list, returning 1 would be wrong.",
+    hint: "What should it return for an empty list?"
+  },
+  "s6q4": {
+    q: "`ft_lstadd_back` needs to reach the last node. Which function of yours do you reuse?",
+    opts: ["ft_lstlast", "ft_lstsize", "ft_lstiter", "ft_lstclear"],
+    why: "`ft_lstlast(*lst)` gives you the last node and all that's left is `last->next = new`. If you already have the function that walks to the end, you don't repeat the loop.",
+    hint: "Its name says exactly what you need."
+  },
+  "s6q5": {
+    q: "In `ft_lstadd_back(&lst, new)` with `*lst == NULL`, `ft_lstlast` returns NULL. What do you do?",
+    opts: [
+      "Check `!*lst` and assign `*lst = new`",
+      "Do `last->next = new` anyway",
+      "Return without doing anything",
+      "Call `ft_lstnew(NULL)` first"
+    ],
+    why: "In an empty list there is no last node to attach anything to: the new node becomes the head. Doing `last->next` with `last == NULL` causes a segfault.",
+    hint: "An empty list and a one-node list behave differently."
+  },
+  "s6q6": {
+    q: "`ft_lstclear(&lst, del)` empties the whole list. Which function of yours does the work for each node?",
+    opts: ["ft_lstdelone", "ft_lstiter", "ft_lstsize", "ft_lstlast"],
+    why: "You walk the list calling `ft_lstdelone(node, del)` on each node and, when done, set `*lst = NULL`. `ft_lstdelone` applies `del` to the content and frees the node.",
+    hint: "Deleting the whole list is deleting one node, many times."
+  },
+  "s6q7": {
+    q: "Inside the `ft_lstclear` loop, what must you do before calling `ft_lstdelone`?",
+    opts: [
+      "Save `next` in a temporary variable",
+      "Set `*lst = NULL`",
+      "Call `ft_lstsize`",
+      "Nothing, `ft_lstdelone` already saves the next one"
+    ],
+    why: "After `ft_lstdelone` the node is freed: reading `node->next` afterwards would be using freed memory. You save the next one first, free the node and advance with the copy.",
+    hint: "After `free`, the node is no longer yours."
+  },
+  "s6q8": {
+    q: "`ft_lstmap(lst, f, del)` creates a new list by applying `f` to each content. Which functions of yours do you combine?",
+    opts: [
+      "ft_lstnew",
+      "ft_lstadd_back",
+      "ft_lstclear",
+      "ft_lstsize",
+      "ft_lstiter"
+    ],
+    why: "`ft_lstnew(f(content))` creates each node, `ft_lstadd_back` appends it to the new list and `ft_lstclear` cleans everything up if something fails. `ft_lstiter` would modify the original list, and `ft_lstmap` must not touch it.",
+    hint: "Create, append and, if it fails, undo."
+  },
+  "s6q9": {
+    q: "In `ft_lstmap`, `f` has already returned the new content but `ft_lstnew` fails to create the node. What do you do?",
+    opts: [
+      "Apply `del` to that content, clear the new list with `ft_lstclear` and return NULL",
+      "Just return NULL",
+      "`free` the original node",
+      "Continue with the next node"
+    ],
+    why: "There are two things to free: the content that `f` already created (which doesn't belong to any node yet) and the nodes you had already built. Forgetting the first is the most typical leak in `ft_lstmap`.",
+    hint: "That new content has no owner yet."
+  },
+  "s6q10": {
+    q: "Using `ft_lstadd_back` on every iteration of `ft_lstmap` is correct, but it walks the new list each time. How do you avoid that?",
+    opts: [
+      "By keeping a pointer to the last created node and attaching directly",
+      "By using `ft_lstadd_front`, which preserves the order of the original list",
+      "By calling `ft_lstsize` before each insertion",
+      "You can't avoid it: it's part of the subject"
+    ],
+    why: "With `ft_lstadd_back` the total cost is O(n²), because each insertion walks everything built so far. Keeping a pointer to the tail brings it down to O(n). `ft_lstadd_front` would reverse the order, and `ft_lstmap` must preserve it.",
+    hint: "If you already know where the last node is, there's no need to look for it."
+  },
+  "s6q11": {
+    q: "Build `ft_lstadd_back` from the pieces. Two are extra.",
+    why: "If the list is empty, `*lst` becomes `new`. Otherwise, you walk to the last node (`last->next == NULL`) and link `new` after it. With `while (last)` the pointer would end up at NULL and there would be nothing left to link to.",
+    hint: "You have to stop at the last node, not go past it. And the empty list is a separate case."
+  }
+});
 /* ===== Motor del juego ===== */
 (function () {
   "use strict";
@@ -1253,14 +1820,14 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   const mastered = (fn) => Q.filter((q) => q.fn === fn).every((q) => S.solved[q.id]);
   const label = (n) => (LIBC.indexOf(n) >= 0 ? n : "ft_" + n);
   const stars = (n) => "★".repeat(n) + "☆".repeat(4 - n);
-  const RANKS = [[0, "PISCINERO"], [0.2, "TOPO"], [0.45, "BECARIO"], [0.75, "NORMINETTE"], [1, "LIBFT MASTER"]];
+  const RANK_AT = [0, 0.2, 0.45, 0.75, 1];
   function rank() {
     const f = xp() / maxXP;
-    let r = RANKS[0][1];
-    RANKS.forEach((x) => { if (f >= x[0]) r = x[1]; });
-    return r;
+    let r = 0;
+    RANK_AT.forEach((x, i) => { if (f >= x) r = i; });
+    return tr("ranks")[r];
   }
-  const cur = () => S.queue[S.qi];
+  const cur = () => LQ(S.queue[S.qi]);
   const firstOpen = () => {
     for (let i = 1; i <= SECTORS.length; i++) if (!cleared(i)) return i;
     return 1;
@@ -1282,10 +1849,18 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
       if (r) mergeSolved((JSON.parse(r) || {}).solved);
     } catch (e) { /* sin almacenamiento */ }
   }
+  let footMode = "local";
   function setFoot(mode) {
-    $("foot").textContent = mode === "cloud"
-      ? "Tu progreso se guarda en tu cuenta y se conserva entre sesiones."
-      : "Tu progreso se guarda sólo en este navegador.";
+    if (mode) footMode = mode;
+    $("foot").textContent = tr(footMode === "cloud" ? "footCloud" : "footLocal");
+  }
+  /* textos fijos del marcado según el idioma */
+  function applyStatic() {
+    document.documentElement.lang = LANG;
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = tr(el.dataset.i18n); });
+    setFoot();
+    const lb = $("lang");
+    if (lb) lb.innerHTML = '<span class="' + (LANG === "es" ? "on" : "") + '">ES</span> / <span class="' + (LANG === "en" ? "on" : "") + '">EN</span>';
   }
   function save() {
     const payload = { v: 1, solved: Object.assign({}, S.solved), t: Date.now() };
@@ -1324,11 +1899,11 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
     $("st-rank").textContent = rank();
   }
   function renderMap() {
-    $("map").innerHTML = SECTORS.map((s) => {
+    $("map").innerHTML = SECTORS.map(LS_).map((s) => {
       const t = secQ(s.n).length, d = solvedCount(s.n), lock = !unlocked(s.n), done = cleared(s.n);
       const cur_ = S.sector === s.n && S.view !== "start" && S.view !== "final";
       return '<button class="sector' + (done ? " done" : "") + '" data-n="' + s.n + '"' + (lock ? " disabled" : "") + (cur_ ? ' aria-current="true"' : "") +
-        ' title="' + esc(lock ? "Completa el sector anterior para abrirlo" : s.blurb) + '">' +
+        ' title="' + esc(lock ? tr("lockedTitle") : s.blurb) + '">' +
         '<span class="hex">' + s.hex + (lock ? " ✕" : done ? " ✔" : "") + "</span>" +
         '<span class="nm">' + s.name + "</span>" +
         '<span class="pg">' + d + "/" + t + "</span>" +
@@ -1338,7 +1913,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   }
   function renderInv() {
     let tot = 0, got = 0;
-    $("inv-groups").innerHTML = SECTORS.map((s) => {
+    $("inv-groups").innerHTML = SECTORS.map(LS_).map((s) => {
       const fns = Array.from(new Set(secQ(s.n).map((q) => q.fn)));
       const chips = fns.map((fn) => {
         const m = mastered(fn);
@@ -1353,11 +1928,11 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
       renderInv();
     }));
     const fn = S.selFn, box = $("depinfo");
-    if (!fn) { box.textContent = "Pulsa una función para ver de cuáles depende y quién la usa."; return; }
+    if (!fn) { box.textContent = tr("depHint"); return; }
     const d = DEPS[fn] || [];
     const used = Object.keys(DEPS).filter((k) => DEPS[k].indexOf(fn) >= 0);
-    let h = "<b>" + label(fn) + "</b> " + (d.length ? "usa: " + d.map(label).join(", ") + "." : "no necesita otras funciones tuyas.");
-    if (used.length) h += "<br>La usan: " + used.map(label).join(", ") + ".";
+    let h = "<b>" + label(fn) + "</b> " + (d.length ? tr("uses") + d.map(label).join(", ") + "." : tr("usesNone"));
+    if (used.length) h += "<br>" + tr("usedBy") + used.map(label).join(", ") + ".";
     box.innerHTML = h;
   }
   function renderChrome() { renderStats(); renderMap(); renderInv(); }
@@ -1432,7 +2007,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
     built.innerHTML = S.built.length ? S.built.map((p, k) => {
       const cls = S.checked ? (S.pool[p] === q.sol[k] ? " right" : " wrong") : "";
       return '<button class="line' + cls + '" data-b="' + k + '"' + (S.checked ? " disabled" : "") + '><span class="no">' + (k + 1) + "</span><span>" + (hl(S.pool[p]) || " ") + "</span></button>";
-    }).join("") : '<p class="empty">Toca las piezas de arriba para colocarlas aquí, en orden. Toca una línea colocada para quitarla.</p>';
+    }).join("") : '<p class="empty">' + tr("buildEmpty") + '</p>';
     pool.querySelectorAll("[data-p]").forEach((el) => el.addEventListener("click", () => { if (!S.checked) { S.built.push(+el.dataset.p); renderBuild(); const b = $("check"); if (b) b.disabled = !canCheck(); } }));
     built.querySelectorAll("[data-b]").forEach((el) => el.addEventListener("click", () => { if (!S.checked) { S.built.splice(+el.dataset.b, 1); renderBuild(); const b = $("check"); if (b) b.disabled = !canCheck(); } }));
     const b = $("check"); if (b && !S.checked) b.disabled = !canCheck();
@@ -1444,7 +2019,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
     S.ok = isRight(q);
     if (!S.review) {
       if (S.ok) { S.solved[q.id] = true; S.done++; save(); }
-      else { S.lives--; S.queue.push(q); }
+      else { S.lives--; S.queue.push(S.queue[S.qi]); }
     }
     if (window.SFX) SFX.play(S.ok ? "ok" : "bad");
     renderStats();
@@ -1479,17 +2054,17 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   function showResult(q) {
     const gain = q.st * 10;
     const deps = DEPS[q.fn];
-    let verdict = S.ok ? (S.review ? "OK" : "OK · +" + gain + " XP") : (S.review ? "NO ES ESA" : S.lives <= 0 ? "SEGMENTATION FAULT" : "ERROR · −1 VIDA");
+    let verdict = S.ok ? (S.review ? "OK" : tr("verdictOk", gain)) : (S.review ? tr("verdictNo") : S.lives <= 0 ? "SEGMENTATION FAULT" : tr("verdictLife"));
     let extra = "";
-    if (!S.ok && q.type === "build") extra = '<p class="explain">Solución:</p><pre class="code">' + q.sol.map(hl).join("\n") + "</pre>";
-    if (!S.ok && q.type === "fill") extra = '<p class="explain">Respuesta válida: <code>' + esc(q.accept[0]) + "</code></p>";
+    if (!S.ok && q.type === "build") extra = '<p class="explain">' + tr("solution") + '</p><pre class="code">' + q.sol.map(hl).join("\n") + "</pre>";
+    if (!S.ok && q.type === "fill") extra = '<p class="explain">' + tr("validAnswer") + '<code>' + esc(q.accept[0]) + "</code></p>";
     const rel = (q.rel || []).filter((r) => r !== q.fn);
     let relHtml = "";
-    if (deps && deps.length) relHtml += '<div class="rel"><span>' + label(q.fn) + " usa:</span>" + deps.map((d) => '<span class="chip link">' + label(d) + "</span>").join("") + "</div>";
-    if (rel.length) relHtml += '<div class="rel"><span>Relacionadas:</span>' + rel.map((r) => '<span class="chip' + (mastered(r) ? " on" : "") + '">' + label(r) + "</span>").join("") + "</div>";
+    if (deps && deps.length) relHtml += '<div class="rel"><span>' + label(q.fn) + tr("usesChip") + "</span>" + deps.map((d) => '<span class="chip link">' + label(d) + "</span>").join("") + "</div>";
+    if (rel.length) relHtml += '<div class="rel"><span>' + tr("related") + '</span>' + rel.map((r) => '<span class="chip' + (mastered(r) ? " on" : "") + '">' + label(r) + "</span>").join("") + "</div>";
     const more = S.qi + 1 < S.queue.length;
-    let nextLabel = more || (!S.ok && !S.review && S.lives > 0) ? "SIGUIENTE ▸" : "CONTINUAR ▸";
-    if (S.lives <= 0 && !S.review) nextLabel = "CONTINUAR ▸";
+    let nextLabel = more || (!S.ok && !S.review && S.lives > 0) ? tr("next") : tr("cont");
+    if (S.lives <= 0 && !S.review) nextLabel = tr("cont");
     $("res").innerHTML = '<div class="result ' + (S.ok ? "ok" : "bad") + '"><div class="verdict">' + verdict + "</div>" + extra +
       '<p class="explain">' + fmt(q.why) + "</p>" + relHtml +
       '<div class="actions"><button class="btn" id="next">' + nextLabel + '</button><span class="kbd">Enter</span></div></div>';
@@ -1505,20 +2080,20 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
 
   function screenStart() {
     $("th-left").textContent = "libft@42:~$ ./libft_quest";
-    $("th-right").textContent = "inicio";
+    $("th-right").textContent = tr("startTag");
     const n = Object.keys(S.solved).length;
     const all = Q.every((q) => S.solved[q.id]);
     $("screen").innerHTML =
       "<h1>LIBFT_QUEST</h1>" +
       '<div class="boot">' +
-      '<span><span class="ok">[ OK ]</span> ' + SECTORS.length + " sectores cargados</span>" +
-      '<span><span class="ok">[ OK ]</span> ' + Q.length + " preguntas, de ★ a ★★★★</span>" +
-      '<span><span class="ok">[ OK ]</span> ' + Object.keys(DEPS).length + " relaciones entre funciones mapeadas</span>" +
-      '<span><span class="ok">[ OK ]</span> progreso: ' + n + " de " + Q.length + " resueltas</span></div>" +
-      '<p class="qtext">Repasa tu libft con retos de dificultad creciente: elegir la respuesta, completar código, encontrar el error y decidir qué funciones reutilizar para construir otras.</p>' +
-      '<p class="qtext">Cada intento de sector te da 3 vidas. Un fallo cuesta una vida y esa pregunta vuelve más tarde. Completa un sector para abrir el siguiente; los superados se pueden repasar sin límite.</p>' +
-      '<div class="actions"><button class="btn" id="go">' + (all ? "VER RESULTADO" : n ? "CONTINUAR" : "INICIAR") + "</button>" +
-      '<button class="btn ghost" id="reset">' + (S.armed ? "¿SEGURO? PULSA DE NUEVO" : "Borrar progreso") + "</button></div>";
+      '<span><span class="ok">[ OK ]</span> ' + tr("bootSectors", SECTORS.length) + "</span>" +
+      '<span><span class="ok">[ OK ]</span> ' + tr("bootQuestions", Q.length) + "</span>" +
+      '<span><span class="ok">[ OK ]</span> ' + tr("bootRelations", Object.keys(DEPS).length) + "</span>" +
+      '<span><span class="ok">[ OK ]</span> ' + tr("bootProgress", n, Q.length) + "</span></div>" +
+      '<p class="qtext">' + tr("intro1") + "</p>" +
+      '<p class="qtext">' + tr("intro2") + "</p>" +
+      '<div class="actions"><button class="btn" id="go">' + (all ? tr("btnResult") : n ? tr("btnContinue") : tr("btnStart")) + "</button>" +
+      '<button class="btn ghost" id="reset">' + (S.armed ? tr("sure") : tr("resetProgress")) + "</button></div>";
     $("go").addEventListener("click", () => { if (all) { S.view = "final"; render(); } else openSector(firstOpen()); });
     $("reset").addEventListener("click", () => {
       if (!S.armed) {
@@ -1531,19 +2106,19 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   }
 
   function screenSector() {
-    const n = S.sector, sec = SECTORS[n - 1], t = secQ(n).length, d = solvedCount(n), done = cleared(n);
+    const n = S.sector, sec = LS_(SECTORS[n - 1]), t = secQ(n).length, d = solvedCount(n), done = cleared(n);
     const sts = secQ(n).map((q) => q.st), lo = Math.min.apply(null, sts), hi = Math.max.apply(null, sts);
     $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$";
-    $("th-right").textContent = d + "/" + t + " resueltas";
+    $("th-right").textContent = tr("solvedCount", d, t);
     $("screen").innerHTML =
       '<div class="tag">SECTOR ' + sec.hex + "</div><h2>" + sec.name + "</h2>" +
       '<p class="qtext">' + esc(sec.blurb) + "</p>" +
-      '<div class="rel"><span>Funciones del sector:</span>' + chipsFor(n) + "</div>" +
-      '<p class="status-line">' + t + " preguntas · dificultad " + stars(lo) + " a " + stars(hi) + " · " + (done ? "completado" : (t - d) + " por resolver") + "</p>" +
+      '<div class="rel"><span>' + tr("sectorFns") + '</span>' + chipsFor(n) + "</div>" +
+      '<p class="status-line">' + tr("status", t, stars(lo), stars(hi), done, t - d) + "</p>" +
       '<div class="actions">' +
       (done
-        ? '<button class="btn" id="rev">REPASAR SECTOR</button><button class="btn ghost" id="nxt">' + (n < SECTORS.length ? "SIGUIENTE SECTOR" : "VER RESULTADO") + "</button>"
-        : '<button class="btn" id="enter">ENTRAR AL SECTOR</button>') +
+        ? '<button class="btn" id="rev">' + tr("review") + '</button><button class="btn ghost" id="nxt">' + (n < SECTORS.length ? tr("nextSector") : tr("btnResult")) + "</button>"
+        : '<button class="btn" id="enter">' + tr("enter") + '</button>') +
       "</div>";
     if (done) {
       $("rev").addEventListener("click", () => startRun(n, true));
@@ -1551,18 +2126,14 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
     } else $("enter").addEventListener("click", () => startRun(n, false));
   }
 
-  const TYPE_LABEL = {
-    choice: "elige una respuesta", multi: "marca todas las correctas",
-    fill: "completa el código", build: "ordena el código", bug: "encuentra la línea con el error"
-  };
 
   function screenQ() {
     const q = cur(), sec = SECTORS[S.sector - 1];
-    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$ ./quest" + (S.review ? " --repaso" : "");
+    $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$ ./quest" + (S.review ? tr("reviewFlag") : "");
     $("th-right").textContent = Math.min(S.done + 1, S.total) + "/" + S.total + " · " + stars(q.st);
     let body = "";
     if (q.type === "bug") {
-      body = '<div class="lines" role="group" aria-label="Líneas de código">' +
+      body = '<div class="lines" role="group" aria-label="' + tr("codeLines") + '">' +
         q.lines.map((l, i) => '<button class="line" data-i="' + i + '"><span class="no">' + (i + 1) + "</span><span>" + (hl(l) || " ") + "</span></button>").join("") + "</div>";
     } else if (q.type === "build") {
       if (!S.pool) {
@@ -1570,20 +2141,20 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
         for (let i = all.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = all[i]; all[i] = all[j]; all[j] = t; }
         S.pool = all;
       }
-      body = '<div class="bhead">Piezas</div><div class="pool" id="pool"></div><div class="bhead">Tu función</div><div class="lines built" id="built"></div>';
+      body = '<div class="bhead">' + tr("pieces") + '</div><div class="pool" id="pool"></div><div class="bhead">' + tr("yourFn") + '</div><div class="lines built" id="built"></div>';
     } else {
       if (q.code) body += '<pre class="code">' + hl(q.code) + "</pre>";
       if (q.type === "fill") {
-        body += '<div class="fillrow"><label for="fill">Tu respuesta:</label><input id="fill" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40"></div>';
+        body += '<div class="fillrow"><label for="fill">' + tr("yourAnswer") + '</label><input id="fill" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="40"></div>';
       } else {
         body += '<div class="opts">' + q.opts.map((o, i) =>
           '<button class="opt" data-i="' + i + '"><span class="key">' + (q.type === "multi" ? "[ ]" : i + 1) + "</span><span>" + fmt(o) + "</span></button>").join("") + "</div>";
       }
     }
     $("screen").innerHTML =
-      '<div class="tag">' + label(q.fn) + " · " + TYPE_LABEL[q.type] + "</div>" +
+      '<div class="tag">' + label(q.fn) + " · " + tr("types")[q.type] + "</div>" +
       '<p class="qtext">' + fmt(q.q) + "</p>" + body +
-      '<div class="actions"><button class="btn" id="check" disabled>COMPROBAR</button><button class="btn ghost" id="hintb">PISTA<span class="kbd-inline"> [P]</span></button><span class="kbd">Enter para comprobar</span></div>' +
+      '<div class="actions"><button class="btn" id="check" disabled>' + tr("check") + '</button><button class="btn ghost" id="hintb">' + tr("hint") + '<span class="kbd-inline"> [P]</span></button><span class="kbd">' + tr("enterToCheck") + '</span></div>' +
       '<div id="hint"></div><div id="res"></div>';
     if (q.type === "build") renderBuild();
     $("screen").querySelectorAll("[data-i]").forEach((el) => el.addEventListener("click", () => select(+el.dataset.i)));
@@ -1593,6 +2164,11 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
       $("hint").innerHTML = S.hint ? '<p class="hint">' + fmt(q.hint) + "</p>" : "";
     });
     const inp = $("fill");
+    /* al repintar (p. ej. cambio de idioma) se restaura el estado de la pregunta */
+    if (S.hint) $("hint").innerHTML = '<p class="hint">' + fmt(q.hint) + "</p>";
+    if (inp && S.fill) inp.value = S.fill;
+    if (S.checked) { markAnswer(q); showResult(q); }
+    else if (q.type === "choice" || q.type === "multi" || q.type === "bug") updateSel();
     if (inp) {
       inp.addEventListener("input", () => { S.fill = inp.value; $("check").disabled = !canCheck(); });
       inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); check(); } });
@@ -1601,15 +2177,15 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   }
 
   function screenClear() {
-    const n = S.sector, sec = SECTORS[n - 1], last = n === SECTORS.length;
+    const n = S.sector, sec = LS_(SECTORS[n - 1]), last = n === SECTORS.length;
     $("th-left").textContent = "libft@42:~/sector_" + sec.hex + "$";
-    $("th-right").textContent = "completado";
+    $("th-right").textContent = tr("cleared");
     $("screen").innerHTML =
-      '<div class="tag">SECTOR ' + sec.hex + "</div><h2>SECTOR COMPLETADO</h2>" +
-      '<div class="boot"><span><span class="ok">[ OK ]</span> ' + sec.name + ": " + secQ(n).length + " de " + secQ(n).length + " preguntas resueltas</span>" +
-      '<span><span class="ok">[ OK ]</span> XP total: ' + xp() + " de " + maxXP + " · rango " + rank() + "</span></div>" +
-      '<div class="rel"><span>Funciones dominadas:</span>' + chipsFor(n) + "</div>" +
-      '<div class="actions"><button class="btn" id="nxt">' + (last ? "VER RESULTADO ▸" : "SIGUIENTE SECTOR ▸") + '</button><button class="btn ghost" id="rev">Repasar este sector</button></div>';
+      '<div class="tag">SECTOR ' + sec.hex + "</div><h2>" + tr("sectorCleared") + "</h2>" +
+      '<div class="boot"><span><span class="ok">[ OK ]</span> ' + sec.name + ": " + tr("clearQ", secQ(n).length, secQ(n).length) + "</span>" +
+      '<span><span class="ok">[ OK ]</span> ' + tr("clearXp", xp(), maxXP, rank()) + "</span></div>" +
+      '<div class="rel"><span>' + tr("mastered") + '</span>' + chipsFor(n) + "</div>" +
+      '<div class="actions"><button class="btn" id="nxt">' + (last ? tr("viewResultArrow") : tr("nextSectorArrow")) + '</button><button class="btn ghost" id="rev">' + tr("reviewThis") + '</button></div>';
     $("nxt").addEventListener("click", () => { if (last) { S.view = "final"; render(); } else openSector(n + 1); });
     $("rev").addEventListener("click", () => startRun(n, true));
   }
@@ -1620,24 +2196,23 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
     $("th-right").textContent = "core dumped";
     $("screen").innerHTML =
       '<h1 style="color:var(--bad)">SEGMENTATION FAULT</h1>' +
-      '<p class="qtext">(core dumped) Te has quedado sin vidas. Llevas ' + solvedCount(n) + " de " + secQ(n).length + " preguntas resueltas en este sector y eso se conserva.</p>" +
-      '<p class="qtext">Las que fallaste siguen pendientes. Lee otra vez las explicaciones y vuelve a entrar.</p>' +
-      '<div class="actions"><button class="btn" id="retry">REINTENTAR SECTOR</button><button class="btn ghost" id="back">Volver al sector</button></div>';
+      '<p class="qtext">' + tr("segP1", solvedCount(n), secQ(n).length) + "</p>" +
+      '<p class="qtext">' + tr("segP2") + '</p>' +
+      '<div class="actions"><button class="btn" id="retry">' + tr("retry") + '</button><button class="btn ghost" id="back">' + tr("backSector") + '</button></div>';
     $("retry").addEventListener("click", () => startRun(n, false));
     $("back").addEventListener("click", () => openSector(n));
   }
 
   function screenFinal() {
-    $("th-left").textContent = "libft@42:~$ ./libft_quest --resultado";
-    $("th-right").textContent = "fin";
+    $("th-left").textContent = tr("finalCmd");
+    $("th-right").textContent = tr("end");
     $("screen").innerHTML =
-      '<div class="tag">RESULTADO</div>' +
+      '<div class="tag">' + tr("resultTag") + '</div>' +
       '<div class="final-score">' + xp() + "/" + maxXP + " XP</div>" +
-      "<h2>RANGO: " + rank() + "</h2>" +
+      "<h2>" + tr("rankIs") + rank() + "</h2>" +
       '<p class="qtext">' + (Q.every((q) => S.solved[q.id])
-        ? "Has superado todos los sectores. Repasa los que más te cuesten hasta que la relación entre funciones te salga sola."
-        : "Aún te quedan preguntas por resolver. Vuelve a los sectores abiertos para completarlos.") + "</p>" +
-      '<div class="actions"><button class="btn" id="home">VOLVER AL INICIO</button></div>';
+        ? tr("finalAll") : tr("finalSome")) + "</p>" +
+      '<div class="actions"><button class="btn" id="home">' + tr("home") + '</button></div>';
     $("home").addEventListener("click", () => { S.view = "start"; render(); });
   }
 
@@ -1677,7 +2252,16 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   });
 
   /* ---- arranque ---- */
+  const lb = $("lang");
+  if (lb) lb.addEventListener("click", () => {
+    LANG = LANG === "es" ? "en" : "es";
+    try { localStorage.setItem(LANG_KEY, LANG); } catch (e) { /* sin almacenamiento */ }
+    applyStatic();
+    render();
+    document.dispatchEvent(new Event("langchange"));
+  });
   loadLocal();
+  applyStatic();
   render();
   initStore();
 })();
@@ -1767,7 +2351,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
 
   function paint() {
     btn.setAttribute("aria-pressed", on ? "true" : "false");
-    btn.textContent = "♪ MÚSICA: " + (on ? "SÍ" : "NO");
+    btn.textContent = tr("music", on);
   }
   function remember(v) { try { localStorage.setItem(KEY, v ? "on" : "off"); } catch (e) { /* sin almacenamiento */ } }
 
@@ -1820,6 +2404,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
     else if (!document.hidden && resumeAfterHidden) { resumeAfterHidden = false; start(); }
   });
 
+  document.addEventListener("langchange", paint);
   paint();
   let saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { /* sin almacenamiento */ }
@@ -1842,7 +2427,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
   function paint() {
     if (!btn) return;
     btn.setAttribute("aria-pressed", enabled ? "true" : "false");
-    btn.textContent = "◆ SONIDOS: " + (enabled ? "SÍ" : "NO");
+    btn.textContent = tr("sfx", enabled);
   }
   function ensure() {
     if (!AC) return false;
@@ -1924,6 +2509,7 @@ Q.sort((a, b) => a.s - b.s || a.st - b.st);
       paint();
       if (enabled) play("ok");
     });
+    document.addEventListener("langchange", paint);
     paint();
   }
 })();
