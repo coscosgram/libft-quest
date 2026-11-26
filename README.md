@@ -2,7 +2,7 @@
 
 Juego de terminal retro para repasar la **libft** de 42. Cincuenta y siete retos repartidos en seis sectores, de menor a mayor dificultad, para consolidar tanto cada función como las relaciones entre ellas.
 
-Hecho por **coscosgram**.
+Hecho por **David Costa Pradillo** ([@coscosgram](https://github.com/coscosgram)) · [LinkedIn](https://www.linkedin.com/in/david-costa-pradillo-8a580965).
 
 ## Cómo se juega
 
